@@ -6,19 +6,40 @@ using System;
 using Microsoft.VisualBasic;
 namespace tilemap_system
 {
+    public class General
+    {
+        public static Vector2 PointToVector2(Point point)
+        {
+            return new Vector2(point.X, point.Y);
+        }
+        public static Point Vector2ToPoint(Vector2 point)
+        {
+            return new Point((int)point.X, (int)point.Y);
+        }
+    }
     public class Game1 : Game
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-        KeyboardState _keyboardState = new KeyboardState();
+        KeyboardState _keyboardState = new();
+        MouseState _mouseState = new();
 
-        static int rows = 10000;
-        static int columns = 10000;
-        private Tiles[][] _Tiles = new Tiles[columns][];
+        static Vector2 screenSize = new();
+        static readonly Point TileArray = new Point(10000, 10000);
+        static readonly int TileArrayX = 10000;
+        static readonly int TileArrayY = 10000;
+
+        //draw
+        Vector2 offset;
+        Point Range = new(30, 15);
+        Point PlayerTileIndex;
+
+
+        private Tiles[][] _Tiles = new Tiles[TileArray.Y][];
         private Player _player;
         private Texture2D square;
 
-        
+
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -28,17 +49,25 @@ namespace tilemap_system
 
         protected override void Initialize()
         {
+            screenSize = new(
+                GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
+                GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height
+                );
+            _graphics.IsFullScreen = false;
+            _graphics.PreferredBackBufferWidth = (int)screenSize.X;
+            _graphics.PreferredBackBufferHeight = (int)screenSize.Y;
+            _graphics.ApplyChanges();
             // TODO: Add your initialization logic here
 
             //set up tiles
             for (int x = 0; x < _Tiles.Length; x++)
             {
-                _Tiles[x] = new Tiles[rows];
+                _Tiles[x] = new Tiles[TileArrayX];
             }
-
-            for (int x = 0; x < columns; x++)
+                        
+            for (int x = 0; x < TileArrayY; x++)
             {
-                for (int y = 0; y < rows; y++)
+                for (int y = 0; y < TileArrayX; y++)
                 {
                     _Tiles[x][y] = new Tiles(new Rectangle(50 * x, 50 * y, 50, 50));
                 }
@@ -61,11 +90,19 @@ namespace tilemap_system
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
-
+            _mouseState = Mouse.GetState();
             _keyboardState = Keyboard.GetState();
 
             _player.update(_keyboardState);
+            if (_mouseState.LeftButton == ButtonState.Pressed)
+            {
+                (Tiles.getTile(new(_mouseState.X - offset.X, _mouseState.Y - offset.Y), _Tiles)).MineTile(3);
+            }
 
+            foreach (Tiles tile in Tiles.getLoaded(_player.GetPosition(), Range, TileArray, _Tiles))
+            {
+                tile.Update();
+            }
             // TODO: Add your update logic here
 
             base.Update(gameTime);
@@ -74,29 +111,15 @@ namespace tilemap_system
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            Vector2 offset = new Vector2(800, 500) / 2 + _player.GetPosition();
-            // TODO: Add your drawing code here
+            offset = screenSize / 2 -_player.GetPosition();
+
             _spriteBatch.Begin();
-            Point range = Tiles.getTileIndex(_player.GetPosition(), _Tiles);
-            for (int x = Math.Max(range.X-1, 0); x < Math.Min(range.X + 2, columns); x++)
-            {
-                for (int y = Math.Max(range.Y - 1, 0); y < Math.Min(range.Y + 2, rows); y++)
-                {
-                    _Tiles[x][y].draw(_spriteBatch, new Vector2(0, 0));
-                }
+
+            foreach (Tiles tile in Tiles.getLoaded(_player.GetPosition(), Range, TileArray, _Tiles)){
+                tile.draw(_spriteBatch, offset);
             }
-            //for (int x = 0; x < columns; x++)
-            //{
-            //    for (int y = 0; y < rows; y++)
-            //    {
-            //        _Tiles[x][y].draw(_spriteBatch, new Vector2(0, 0));
-            //    }
-            //}
+            _player.Draw(_spriteBatch, screenSize);
 
-            //((Tiles)Tiles.getTile(_player.GetPosition(), _Tiles)).draw(_spriteBatch);
-
-
-            _player.Draw(_spriteBatch);
             _spriteBatch.End();
             base.Draw(gameTime);
         }
