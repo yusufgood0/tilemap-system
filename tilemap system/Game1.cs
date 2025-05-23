@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using Microsoft.VisualBasic;
+using System.Diagnostics;
 namespace tilemap_system
 {
     public class Game1 : Game
@@ -12,12 +13,15 @@ namespace tilemap_system
         private SpriteBatch _spriteBatch;
         KeyboardState _keyboardState = new KeyboardState();
 
-        static int rows = 5;
-        static int columns = 8;
+        private Point range = new((int)screenSize.X / Tiles.getSize()/2, (int)screenSize.Y / Tiles.getSize()/2);
+        static int rows = 100;
+        static int columns = 100;
         private Tiles[][] _Tiles = new Tiles[columns][];
         private Player _player;
         private Texture2D square;
 
+
+        static Vector2 screenSize = new(800, 800);
         
         public Game1()
         {
@@ -29,7 +33,9 @@ namespace tilemap_system
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-
+            _graphics.PreferredBackBufferHeight = (int)screenSize.X;
+            _graphics.PreferredBackBufferWidth = (int)screenSize.Y;
+            _graphics.ApplyChanges();
             //set up tiles
             for (int x = 0; x < _Tiles.Length; x++)
             {
@@ -74,21 +80,22 @@ namespace tilemap_system
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            Vector2 offset = new Vector2(800, 500) / 2 + _player.GetPosition();
+            Vector2 offset = screenSize / 2 - _player.GetPosition();
             // TODO: Add your drawing code here
             _spriteBatch.Begin();
-            Point range = Tiles.getTileIndex(_player.GetPosition(), _Tiles);
-            for (int x = Math.Max(range.X-1, 0); x < Math.Min(range.X + 2, columns); x++)
-            {
-                for (int y = Math.Max(range.Y - 1, 0); y < Math.Min(range.Y + 2, rows); y++)
-                {
-                    _Tiles[x][y].draw(_spriteBatch, new Vector2(0, 0));
-                }
-            }
+            Point CameraTileIndex = Tiles.getTileIndex(_player.GetPosition(), _Tiles);
+
+            //for (int x = Math.Max(CameraTileIndex.X - range.X + 1, 0); x < Math.Min(CameraTileIndex.X + range.Y, columns); x++)
+            //{
+            //    for (int y = Math.Max(CameraTileIndex.Y - range.Y + 1, 0); y < Math.Min(CameraTileIndex.Y + range.Y, rows); y++)
+            //    {
+            //        _Tiles[x][y].draw(_spriteBatch, offset);
+            //    }
+            //}
             //((Tiles)Tiles.getTile(_player.GetPosition(), _Tiles)).draw(_spriteBatch);
 
 
-            _player.Draw(_spriteBatch);
+            _player.Draw(_spriteBatch, screenSize);
             _spriteBatch.End();
             base.Draw(gameTime);
         }

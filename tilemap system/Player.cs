@@ -27,9 +27,9 @@ namespace tilemap_system
             _texture = texture;
         }
 
-        public void Draw(SpriteBatch _spritebatch)
+        public void Draw(SpriteBatch _spritebatch, Vector2 screenSize)
         {
-            _spritebatch.Draw(_texture, new Rectangle((int)_position.X - size / 2, (int)_position.Y - size / 2, size, size), Color.Red);
+            _spritebatch.Draw(_texture, new Rectangle((int)screenSize.X/2 - size / 2, (int)screenSize.Y/2 - size / 2, size, size), Color.Red);
         }
 
         public void update(KeyboardState keyboardState)

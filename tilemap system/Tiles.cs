@@ -29,10 +29,14 @@ namespace tilemap_system
         public void draw(SpriteBatch spriteBatch, Vector2 offset)
         {
             spriteBatch.Draw(_texture,
-                new Rectangle (_collideRectangle.X + (int)offset.Y, _collideRectangle.Y + (int)offset.Y, _size, _size),
+                new Rectangle (_collideRectangle.X + (int)offset.X, _collideRectangle.Y + (int)offset.Y, _size, _size),
                 null,
                 Color.White
                 );
+        }
+        public static int getSize()
+        {
+            return _size;
         }
         public static Point getTileIndex(Vector2 position, Tiles[][] _Tiles)
         {
