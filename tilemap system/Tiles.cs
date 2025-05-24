@@ -13,15 +13,15 @@ namespace tilemap_system
     internal class Tiles
     {
         static Texture2D _texture;
-        static int _size = 50;
+        static int _size = 15;
         static int maxHealth = 100;
         Rectangle _collideRectangle;
         int health = maxHealth;
 
-        public Tiles(Rectangle point)
+        public Tiles(Point point)
         {
             //_collideRectangle = new Rectangle(_size * point.X, _size * point.Y, _size, _size);
-            _collideRectangle = point;
+            _collideRectangle = new (point.X * _size, point.Y * _size, _size, _size);
         }
 
         public static void setTexture(Texture2D texture)
@@ -48,7 +48,7 @@ namespace tilemap_system
             Vector2 tileIndex = position / _size;
             if (tileIndex.X > _Tiles.Length || tileIndex.Y > _Tiles[0].Length || tileIndex.X < 0 || tileIndex.Y < 0)
             {
-                return new Tiles(new(0, 0, 0, 0));
+                return new Tiles(new(0, 0));
             }
             return _Tiles[(int)tileIndex.X][(int)tileIndex.Y];
         }
@@ -66,6 +66,11 @@ namespace tilemap_system
             }
 
             return tiles;
+        }
+
+        public static int getSize()
+        {
+            return _size;
         }
         public void Update()
         {

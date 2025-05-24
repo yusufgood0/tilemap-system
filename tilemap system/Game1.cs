@@ -6,17 +6,6 @@ using System;
 using Microsoft.VisualBasic;
 namespace tilemap_system
 {
-    public class General
-    {
-        public static Vector2 PointToVector2(Point point)
-        {
-            return new Vector2(point.X, point.Y);
-        }
-        public static Point Vector2ToPoint(Vector2 point)
-        {
-            return new Point((int)point.X, (int)point.Y);
-        }
-    }
     public class Game1 : Game
     {
         private GraphicsDeviceManager _graphics;
@@ -31,9 +20,8 @@ namespace tilemap_system
 
         //draw
         Vector2 offset;
-        Point Range = new(30, 15);
+        Point Range = new(10, 10);
         Point PlayerTileIndex;
-
 
         private Tiles[][] _Tiles = new Tiles[TileArray.Y][];
         private Player _player;
@@ -69,7 +57,7 @@ namespace tilemap_system
             {
                 for (int y = 0; y < TileArrayX; y++)
                 {
-                    _Tiles[x][y] = new Tiles(new Rectangle(50 * x, 50 * y, 50, 50));
+                    _Tiles[x][y] = new Tiles(new (x, y));
                 }
             }
             _player = new Player(new Vector2());
@@ -98,8 +86,8 @@ namespace tilemap_system
             {
                 (Tiles.getTile(new(_mouseState.X - offset.X, _mouseState.Y - offset.Y), _Tiles)).MineTile(3);
             }
-
-            foreach (Tiles tile in Tiles.getLoaded(_player.GetPosition(), Range, TileArray, _Tiles))
+            
+            foreach (Tiles tile in Tiles.getLoaded(_player.GetPosition(), new((int)screenSize.X / Tiles.getSize(), (int)screenSize.Y / Tiles.getSize()), TileArray, _Tiles))
             {
                 tile.Update();
             }
@@ -115,7 +103,7 @@ namespace tilemap_system
 
             _spriteBatch.Begin();
 
-            foreach (Tiles tile in Tiles.getLoaded(_player.GetPosition(), Range, TileArray, _Tiles)){
+            foreach (Tiles tile in Tiles.getLoaded(_player.GetPosition(), new ((int)screenSize.X/Tiles.getSize(), (int)screenSize.Y / Tiles.getSize()), TileArray, _Tiles)){
                 tile.draw(_spriteBatch, offset);
             }
             _player.Draw(_spriteBatch, screenSize);
