@@ -13,7 +13,7 @@ namespace tilemap_system
     internal class Tiles
     {
         static Texture2D _texture;
-        static int _size = 15;
+        static int _size = 20;
         static int maxHealth = 100;
         Rectangle _collideRectangle;
         int health = maxHealth;
@@ -52,10 +52,30 @@ namespace tilemap_system
             }
             return _Tiles[(int)tileIndex.X][(int)tileIndex.Y];
         }
+        public static List<Tiles> CollidingTiles(Rectangle rectangle, Point TileArray, Tiles[][] _Tiles)
+        {
+            List<Tiles?> tiles = new List<Tiles?>();
+
+            Point point1 = getTileIndex(new Vector2(rectangle.Left, rectangle.Top), _Tiles);
+            Point point2 = getTileIndex(new Vector2(rectangle.Right, rectangle.Bottom), _Tiles);
+                    
+
+            for (int x = Math.Max(point1.X, 0); x < Math.Min(point2.X + 1, TileArray.X); x++)
+            {
+                for (int y = Math.Max(point1.Y, 0); y < Math.Min(point2.Y + 1, TileArray.Y); y++)
+                {
+                    tiles.Add(_Tiles[x][y]);
+                }
+            }
+            return tiles;
+        }
         public static List<Tiles?> getLoaded(Vector2 focusPoint, Point range, Point TileArray, Tiles[][] _Tiles)
         {
             Point CameraTileIndex = Tiles.getTileIndex(focusPoint, _Tiles);
             List<Tiles?> tiles = new List<Tiles?>();
+            range = new(
+                (int)Math.Round((float)range.X / _size) + 1,
+                (int)Math.Round((float)range.Y / _size) + 1);
 
             for (int x = Math.Max(CameraTileIndex.X - range.X + 1, 0); x < Math.Min(CameraTileIndex.X + range.X, TileArray.Y); x++)
             {
@@ -67,7 +87,10 @@ namespace tilemap_system
 
             return tiles;
         }
-
+        public Rectangle GetRectangle()
+        {
+            return _collideRectangle;
+        }
         public static int getSize()
         {
             return _size;

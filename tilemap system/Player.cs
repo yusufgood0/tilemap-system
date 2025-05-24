@@ -13,13 +13,17 @@ namespace tilemap_system
     internal class Player
     {
         static Texture2D _texture;
-        static int size = 25;
+        static int size = 12;
         Vector2 _position = new();
         Vector2 _speed = new();
 
         public Player(Vector2 position)
         {
             _position = position;
+        }
+        public Player(Point position)
+        {
+            _position = new(position.X, position.Y);
         }
 
         public static void SetTexture(Texture2D texture)
@@ -50,15 +54,22 @@ namespace tilemap_system
             {
                 _speed.X += 1;
             }
-
-            _position.X += _speed.X;
-            _position.Y += _speed.Y;
-            _speed /= 2;
+            _position += General.Normalize(_speed, 5);
+            //_position.X += _speed.X;
+            //_position.Y += _speed.Y;
+            _speed = new();
         }
-
+        public int GetSize()
+        {
+            return size;
+        }
         public Vector2 GetPosition()
         {
             return _position;
+        }
+        public Rectangle GetRectangle()
+        {
+            return new Rectangle((int)_position.X - size/2, (int)_position.Y - size / 2, size, size);
         }
     
     }

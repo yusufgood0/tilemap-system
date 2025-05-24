@@ -14,13 +14,10 @@ namespace tilemap_system
         MouseState _mouseState = new();
 
         static Vector2 screenSize = new();
-        static readonly Point TileArray = new Point(10000, 10000);
-        static readonly int TileArrayX = 10000;
-        static readonly int TileArrayY = 10000;
+        static readonly Point TileArray = new Point(1000, 1000);
 
         //draw
         Vector2 offset;
-        Point Range = new(10, 10);
         Point PlayerTileIndex;
 
         private Tiles[][] _Tiles = new Tiles[TileArray.Y][];
@@ -41,7 +38,7 @@ namespace tilemap_system
                 GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
                 GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height
                 );
-            _graphics.IsFullScreen = false;
+            _graphics.IsFullScreen = true;
             _graphics.PreferredBackBufferWidth = (int)screenSize.X;
             _graphics.PreferredBackBufferHeight = (int)screenSize.Y;
             _graphics.ApplyChanges();
@@ -50,17 +47,17 @@ namespace tilemap_system
             //set up tiles
             for (int x = 0; x < _Tiles.Length; x++)
             {
-                _Tiles[x] = new Tiles[TileArrayX];
+                _Tiles[x] = new Tiles[TileArray.X];
             }
                         
-            for (int x = 0; x < TileArrayY; x++)
+            for (int x = 0; x < TileArray.Y; x++)
             {
-                for (int y = 0; y < TileArrayX; y++)
+                for (int y = 0; y < TileArray.X; y++)
                 {
                     _Tiles[x][y] = new Tiles(new (x, y));
                 }
             }
-            _player = new Player(new Vector2());
+            _player = new Player(_Tiles[TileArray.X / 2][TileArray.Y / 2].GetRectangle().Center);
 
             base.Initialize();
         }
@@ -87,7 +84,7 @@ namespace tilemap_system
                 (Tiles.getTile(new(_mouseState.X - offset.X, _mouseState.Y - offset.Y), _Tiles)).MineTile(3);
             }
             
-            foreach (Tiles tile in Tiles.getLoaded(_player.GetPosition(), new((int)screenSize.X / Tiles.getSize(), (int)screenSize.Y / Tiles.getSize()), TileArray, _Tiles))
+            foreach (Tiles tile in Tiles.getLoaded(_player.GetPosition(), new((int)screenSize.X/2, (int)screenSize.Y / 2), TileArray, _Tiles))
             {
                 tile.Update();
             }
@@ -100,12 +97,19 @@ namespace tilemap_system
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
             offset = screenSize / 2 -_player.GetPosition();
-
             _spriteBatch.Begin();
-
-            foreach (Tiles tile in Tiles.getLoaded(_player.GetPosition(), new ((int)screenSize.X/Tiles.getSize(), (int)screenSize.Y / Tiles.getSize()), TileArray, _Tiles)){
+            foreach (Tiles tile in Tiles.CollidingTiles(new((int)(_player.GetPosition().X-screenSize.X/2), (int)(_player.GetPosition().Y-screenSize.Y / 2), (int)screenSize.X, (int)screenSize.Y), TileArray, _Tiles))
+            {
                 tile.draw(_spriteBatch, offset);
             }
+            //foreach (Tiles tile in Tiles.CollidingTiles(_player.GetRectangle(), TileArray, _Tiles))
+            //{
+            //    tile.draw(_spriteBatch, offset);
+            //}
+            //foreach (Tiles tile in Tiles.getLoaded(_player.GetPosition(), new((int)screenSize.X / 2, (int)screenSize.Y / 2), TileArray, _Tiles))
+            //{
+            //    tile.draw(_spriteBatch, offset);
+            //}
             _player.Draw(_spriteBatch, screenSize);
 
             _spriteBatch.End();
