@@ -13,15 +13,24 @@ namespace tilemap_system
     internal class Tiles
     {
         static Texture2D _texture;
-        static int _size = 20;
         static int maxHealth = 100;
-        Rectangle _collideRectangle;
-        int health = maxHealth;
-
-        public Tiles(Point point)
+        static int xSize = 40; 
+        static int ySize = 40; 
+        static int zSize = 1;
+        Cube _collideCube = new(0, 0, 0, xSize, ySize, zSize);
+        int _health = maxHealth;
+        ID _type = ID.Full;
+        enum ID
         {
-            //_collideRectangle = new Rectangle(_size * point.X, _size * point.Y, _size, _size);
-            _collideRectangle = new (point.X * _size, point.Y * _size, _size, _size);
+            Empty,
+            Full,
+        }
+
+        public Tiles(Vector3 point)
+        {
+            _collideCube.X = (int)point.X * xSize;
+            _collideCube.Y = (int)point.Y * ySize;
+            _collideCube.Z = (int)point.Z * zSize;
         }
 
         public static void setTexture(Texture2D texture)
@@ -30,52 +39,81 @@ namespace tilemap_system
         }
         public void draw(SpriteBatch spriteBatch, Vector2 offset)
         {
-            int color = (int)((float)health / maxHealth * 255);
+            Color color = Color.White;
+            switch (_type)
+            {
+                case ID.Full:
+                    int value = (int)((float)_health / maxHealth * 255);
+                    color = new(value, value, 0);
+                    break;
+                case ID.Empty:
+                    color = new(125, 125, 125);
+                    break;
+            }
+
+            //int color = (int)((float)_collideCube.Z);
             spriteBatch.Draw(_texture,
-                new Rectangle(_collideRectangle.X + (int)offset.X, _collideRectangle.Y + (int)offset.Y, _size, _size),
-                null,
-                new Color(color, color, color)
-                );
+                    new Rectangle(
+                        (int)_collideCube.X + (int)offset.X,
+                        (int)_collideCube.Y + (int)offset.Y, 
+                        _collideCube.XSize, 
+                        _collideCube.YSize),
+                    null,
+                    color,
+                    0,
+                    new(),
+                    0,
+                    _collideCube.Z
+                    );
         }
-        public static Point getTileIndex(Vector2 position, Tiles[][] _Tiles)
+        public static Point getTileIndex(Vector3 position, Tiles[][] _Tiles)
         {
-            Vector2 tileIndex = position / _size;
-            return new Point((int)tileIndex.X, (int)tileIndex.Y);
+            int x = (int)(position.X / xSize);
+            int y = (int)(position.Y / ySize);
+            int z = (int)(position.Z / zSize);
+            return new Point(x, y);
         }
 
-        public static Tiles? getTile(Vector2 position, Tiles[][] _Tiles)
+        public static Tiles? getTile(Vector3 position, Tiles[][] _Tiles)
         {
-            Vector2 tileIndex = position / _size;
-            if (tileIndex.X > _Tiles.Length || tileIndex.Y > _Tiles[0].Length || tileIndex.X < 0 || tileIndex.Y < 0)
+            int x = (int)(position.X / xSize);
+            int y = (int)(position.Y / ySize);
+            int z = (int)(position.Z / zSize);
+            if (y > _Tiles.Length || y > _Tiles[0].Length || y < 0 || y < 0)
             {
-                return new Tiles(new(0, 0));
+                return new Tiles(new(0, 0, 0));
             }
-            return _Tiles[(int)tileIndex.X][(int)tileIndex.Y];
+            return _Tiles[x][y];
         }
         public static List<Tiles> CollidingTiles(Rectangle rectangle, Point TileArray, Tiles[][] _Tiles)
         {
             List<Tiles?> tiles = new List<Tiles?>();
 
-            Point point1 = getTileIndex(new Vector2(rectangle.Left, rectangle.Top), _Tiles);
-            Point point2 = getTileIndex(new Vector2(rectangle.Right, rectangle.Bottom), _Tiles);
-                    
+            Point point1 = getTileIndex(new Vector3(rectangle.Left, rectangle.Top, 0), _Tiles);
+            Point point2 = getTileIndex(new Vector3(rectangle.Right, rectangle.Bottom, 0), _Tiles);
 
-            for (int x = Math.Max(point1.X, 0); x < Math.Min(point2.X + 1, TileArray.X); x++)
+
+            for (int x = point1.X; x < point2.X + 1; x++)
             {
-                for (int y = Math.Max(point1.Y, 0); y < Math.Min(point2.Y + 1, TileArray.Y); y++)
+                for (int y = point1.Y; y < point2.Y + 1; y++)
                 {
-                    tiles.Add(_Tiles[x][y]);
+                    if (TileArray.X > x && x > 0 && TileArray.Y > y && y > 0)
+                    {
+                        tiles.Add(_Tiles[x][y]);
+                    }
                 }
             }
+
             return tiles;
+            
         }
         public static List<Tiles?> getLoaded(Vector2 focusPoint, Point range, Point TileArray, Tiles[][] _Tiles)
         {
-            Point CameraTileIndex = Tiles.getTileIndex(focusPoint, _Tiles);
+            Point CameraTileIndex = Tiles.getTileIndex(new(focusPoint, 0), _Tiles);
             List<Tiles?> tiles = new List<Tiles?>();
             range = new(
-                (int)Math.Round((float)range.X / _size) + 1,
-                (int)Math.Round((float)range.Y / _size) + 1);
+                (int)Math.Round((float)range.X / xSize) + 1,
+                (int)Math.Round((float)range.Y / ySize) + 1);
 
             for (int x = Math.Max(CameraTileIndex.X - range.X + 1, 0); x < Math.Min(CameraTileIndex.X + range.X, TileArray.Y); x++)
             {
@@ -87,25 +125,28 @@ namespace tilemap_system
 
             return tiles;
         }
-        public Rectangle GetRectangle()
-        {
-            return _collideRectangle;
-        }
-        public static int getSize()
-        {
-            return _size;
-        }
         public void Update()
         {
-            if (health > 0)
+            if (Isfull)
             {
-                health = Math.Min(health + 1, maxHealth);
+                _health = Math.Min(_health + 1, maxHealth);
+                _type = ID.Full;
             }
         }
         public void MineTile(int damage)
         {
-            health = Math.Max(health - damage, 0);
+            _health = _health - damage;
+            if (_health < 0)
+            {
+                _health = 0;
+                _type = ID.Empty;
+            }
         }
 
+        public Cube Cube { get => _collideCube; set; }
+        static public int XSize { get => xSize; set; }
+        static public int YSize { get => ySize; set; }
+        static public int ZSize { get => zSize; set; }
+        public bool Isfull { get => !(_type == ID.Empty); set; }
     }
 }

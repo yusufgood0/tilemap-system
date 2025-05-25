@@ -10,7 +10,7 @@ namespace tilemap_system
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-        KeyboardState _keyboardState = new();
+        KeyboardState _keyboardState, _PreviouskeyboardState;
         MouseState _mouseState = new();
 
         static Vector2 screenSize = new();
@@ -54,11 +54,12 @@ namespace tilemap_system
             {
                 for (int y = 0; y < TileArray.X; y++)
                 {
-                    _Tiles[x][y] = new Tiles(new (x, y));
+                    _Tiles[x][y] = new Tiles(new (x, y, 0));
                 }
             }
-            _player = new Player(_Tiles[TileArray.X / 2][TileArray.Y / 2].GetRectangle().Center);
-
+            _player = new Player(_Tiles[TileArray.X / 2][0].Cube.Position);
+            //_player = new Player(new(100, -100, 0));
+            
             base.Initialize();
         }
 
@@ -78,16 +79,47 @@ namespace tilemap_system
             _mouseState = Mouse.GetState();
             _keyboardState = Keyboard.GetState();
 
-            _player.update(_keyboardState);
             if (_mouseState.LeftButton == ButtonState.Pressed)
             {
-                (Tiles.getTile(new(_mouseState.X - offset.X, _mouseState.Y - offset.Y), _Tiles)).MineTile(3);
+                (Tiles.getTile(new(_mouseState.X - offset.X, _mouseState.Y - offset.Y, 0), _Tiles)).MineTile(3);
             }
             
-            foreach (Tiles tile in Tiles.getLoaded(_player.GetPosition(), new((int)screenSize.X/2, (int)screenSize.Y / 2), TileArray, _Tiles))
-            {
+            foreach (Tiles tile in Tiles.CollidingTiles(new((int)(_player.XY.X - screenSize.X / 2), (int)(_player.XY.Y - screenSize.Y / 2), (int)screenSize.X, (int)screenSize.Y), TileArray, _Tiles))
+            //foreach (Tiles tile in Tiles.getLoaded(_player.XY, new((int)screenSize.X/2, (int)screenSize.Y / 2), TileArray, _Tiles))
+                {
                 tile.Update();
             }
+            foreach (Tiles tile in Tiles.CollidingTiles(new(_player.Rectangle.X, _player.Rectangle.Bottom, _player.Rectangle.Width, 3), TileArray, _Tiles))
+            {
+                if (tile.Isfull)
+                {
+                    if (General.OnPress(_keyboardState, _PreviouskeyboardState, Keys.Space)) { 
+                        _player.jump();
+                        break;
+                    }
+                }
+            }
+
+
+            _player.move(new(_player.Speed.X, 0, 0));
+            foreach (Tiles tile in Tiles.CollidingTiles(_player.Rectangle, TileArray, _Tiles))
+            {
+                if (tile.Isfull) { _player.CollisionX(tile.Cube); }
+            }
+            _player.move(new(0, _player.Speed.Y, 0));
+            foreach (Tiles tile in Tiles.CollidingTiles(_player.Rectangle, TileArray, _Tiles)){
+                if (tile.Isfull) { _player.CollisionY(tile.Cube); } 
+            }
+            _player.move(new(0, 0, _player.Speed.Z));
+            foreach (Tiles tile in Tiles.CollidingTiles(_player.Rectangle, TileArray, _Tiles)){
+                if (tile.Isfull) { _player.CollisionZ(tile.Cube); }
+            }
+
+            _player.update(_keyboardState, _PreviouskeyboardState);
+
+
+
+            _PreviouskeyboardState = _keyboardState;
             // TODO: Add your update logic here
 
             base.Update(gameTime);
@@ -96,21 +128,20 @@ namespace tilemap_system
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            offset = screenSize / 2 -_player.GetPosition();
+            offset = screenSize / 2 -_player.XY;
             _spriteBatch.Begin();
-            foreach (Tiles tile in Tiles.CollidingTiles(new((int)(_player.GetPosition().X-screenSize.X/2), (int)(_player.GetPosition().Y-screenSize.Y / 2), (int)screenSize.X, (int)screenSize.Y), TileArray, _Tiles))
+            foreach (Tiles tile in Tiles.CollidingTiles(new((int)(_player.XY.X - screenSize.X / 2), (int)(_player.XY.Y - screenSize.Y / 2), (int)screenSize.X, (int)screenSize.Y), TileArray, _Tiles))
             {
-                tile.draw(_spriteBatch, offset);
+                if (tile.Isfull)
+                {
+                    tile.draw(_spriteBatch, offset);
+                }
             }
-            //foreach (Tiles tile in Tiles.CollidingTiles(_player.GetRectangle(), TileArray, _Tiles))
-            //{
-            //    tile.draw(_spriteBatch, offset);
-            //}
             //foreach (Tiles tile in Tiles.getLoaded(_player.GetPosition(), new((int)screenSize.X / 2, (int)screenSize.Y / 2), TileArray, _Tiles))
             //{
             //    tile.draw(_spriteBatch, offset);
             //}
-            _player.Draw(_spriteBatch, screenSize);
+            _player.Draw(_spriteBatch, offset);
 
             _spriteBatch.End();
             base.Draw(gameTime);
