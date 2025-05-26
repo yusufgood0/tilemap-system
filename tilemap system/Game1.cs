@@ -12,7 +12,6 @@ namespace tilemap_system
         private SpriteBatch _spriteBatch;
         KeyboardState _keyboardState, _PreviouskeyboardState;
         MouseState _mouseState = new();
-
         static Vector2 screenSize = new();
         static readonly IntTriple TileArray = new(200, 200, 200);
 
@@ -20,6 +19,7 @@ namespace tilemap_system
         Vector2 offset;
         Point PlayerTileIndex;
 
+        private IntTriple renderDistance = new(100, 100, 100);
         private Tiles[][][] _Tiles = new Tiles[TileArray.X][][];
         private Player _player;
         private Texture2D square;
@@ -93,7 +93,7 @@ namespace tilemap_system
             //        (tile).MineTile(3);
             //}
 
-            foreach (Tiles tile in Tiles.getLoaded(_player.Position, new((int)1000 / 2, (int)1000 / 2, (int)10000 / 2), TileArray, _Tiles))
+            foreach (Tiles tile in Tiles.getLoaded(_player.Position, renderDistance, TileArray, _Tiles))
             {
                 tile.Update();
             }
@@ -153,7 +153,7 @@ namespace tilemap_system
             //        tile.draw(_spriteBatch, offset);
             //    }
             //}
-            foreach (Tiles tile in Tiles.getLoaded(_player.Position, new((int)1000 / 2, (int)1000 / 2, (int)10000 / 2), TileArray, _Tiles))
+            foreach (Tiles tile in Tiles.getLoaded(_player.Position, renderDistance, TileArray, _Tiles))
             {
                 //if(tile.Cube.Z == 0)
                 if (tile.Cube.Z < _player.Cube.Z)

@@ -11,12 +11,6 @@ namespace tilemap_system
 {
     internal class Cube
     {
-        //int x;
-        //int xSize;
-        //int y;
-        //int ySize;
-        //int z;
-        //int zSize;
         public Cube(int x, int y, int z, int xSize, int ySize, int zSize)
         {
             this.X = x; this.XSize = xSize;
@@ -46,7 +40,7 @@ namespace tilemap_system
         public int XSize { get; set; }
         public int YSize { get; set; }
         public int ZSize { get; set; }
-        public Rectangle Rectangle { get => new(X, Y, XSize, YSize); set; }
-        public IntTriple Position { get => new(X, Y, Z); set; }
+        public Rectangle Rectangle { get => new (X, Y, XSize, YSize); }
+        public IntTriple Position { get => new(X, Y, Z); }
     }
 }
