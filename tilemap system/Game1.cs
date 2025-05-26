@@ -14,7 +14,7 @@ namespace tilemap_system
         MouseState _mouseState = new();
 
         static Vector2 screenSize = new();
-        static readonly IntTriple TileArray = new(10, 200, 10);
+        static readonly IntTriple TileArray = new(200, 200, 200);
 
         //draw
         Vector2 offset;
@@ -94,7 +94,6 @@ namespace tilemap_system
             //}
 
             foreach (Tiles tile in Tiles.getLoaded(_player.Position, new((int)1000 / 2, (int)1000 / 2, (int)10000 / 2), TileArray, _Tiles))
-            //foreach (Tiles tile in Tiles.getLoaded(_player.XY, new((int)screenSize.X/2, (int)screenSize.Y / 2), TileArray, _Tiles))
             {
                 tile.Update();
             }
@@ -110,8 +109,8 @@ namespace tilemap_system
                 }
             }
 
-
-            _player.move(new(_player.Speed.X, 0, 0));
+            //Does Player Collision & movement
+            _player.move(new(_player.Speed.X, 0, 0)); 
             foreach (Tiles tile in Tiles.CollidingTiles(_player.Cube, TileArray, _Tiles))
             {
                 if (tile.Isfull) { _player.CollisionX(tile.Cube); }
@@ -132,7 +131,7 @@ namespace tilemap_system
 
             }
 
-            _player.update(_keyboardState, _PreviouskeyboardState);
+            _player.update(_keyboardState, _PreviouskeyboardState); // updates Player._speed with movement and stuff
 
 
 
