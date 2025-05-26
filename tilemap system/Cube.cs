@@ -11,30 +11,36 @@ namespace tilemap_system
 {
     internal class Cube
     {
-        float _x;
-        int _xSize;
-        float _y;
-        int _ySize;
-        float _z;
-        int _zSize;
+        //int x;
+        //int xSize;
+        //int y;
+        //int ySize;
+        //int z;
+        //int zSize;
         public Cube(int x, int y, int z, int xSize, int ySize, int zSize)
         {
-            _x = x; _xSize = xSize;
-            _y = y; _ySize = ySize;
-            _z = z; _zSize = zSize;
+            this.X = x; this.XSize = xSize;
+            this.Y = y; this.YSize = ySize;
+            this.Z = z; this.ZSize = zSize;
+        }
+        public Cube(IntTriple triple, int xSize, int ySize, int zSize)
+        {
+            this.X = triple.X; this.XSize = xSize;
+            this.Y = triple.Y; this.YSize = ySize;
+            this.Z = triple.Z; this.ZSize = zSize;
         }
 
-        public float X { get => _x; set; }
-        public float X_OP { get => _x + _xSize; set; }
-        public float Y { get => _y; set; }
-        public float Y_OP { get => _y + _ySize; set; }
-        public float Z { get => _z; set; }
-        public float Z_OP { get => _z + _zSize; set; }
+        public int X { get; set; }
+        public int X_OP { get => X + XSize; }
+        public int Y { get; set; }
+        public int Y_OP { get => Y + YSize; }
+        public int Z { get; set; }
+        public int Z_OP { get => Z + ZSize; }
 
-        public int XSize { get => _xSize; set; }
-        public int YSize { get => _ySize; set; }
-        public int ZSize { get => _zSize; set; }
-        public Rectangle Rectangle { get => new((int)_x, (int)_y, _xSize, _ySize); set; }
-        public Vector3 Position { get => new(_x, _y, _z); set; }
+        public int XSize { get; set; }
+        public int YSize { get; set; }
+        public int ZSize { get; set; }
+        public Rectangle Rectangle { get => new(X, Y, XSize, YSize); set; }
+        public IntTriple Position { get => new(X, Y, Z); set; }
     }
 }

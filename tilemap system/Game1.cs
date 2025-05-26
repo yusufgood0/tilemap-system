@@ -14,13 +14,13 @@ namespace tilemap_system
         MouseState _mouseState = new();
 
         static Vector2 screenSize = new();
-        static readonly Point TileArray = new Point(1000, 1000);
+        static readonly IntTriple TileArray = new (10, 3, 3);
 
         //draw
         Vector2 offset;
         Point PlayerTileIndex;
 
-        private Tiles[][] _Tiles = new Tiles[TileArray.Y][];
+        private Tiles[][][] _Tiles = new Tiles[TileArray.X][][];
         private Player _player;
         private Texture2D square;
 
@@ -45,20 +45,28 @@ namespace tilemap_system
             // TODO: Add your initialization logic here
 
             //set up tiles
-            for (int x = 0; x < _Tiles.Length; x++)
+            for (int x = 0; x < TileArray.X; x++)
             {
-                _Tiles[x] = new Tiles[TileArray.X];
-            }
-                        
-            for (int x = 0; x < TileArray.Y; x++)
-            {
-                for (int y = 0; y < TileArray.X; y++)
+                _Tiles[x] = new Tiles[TileArray.Y][];
+                for (int y = 0; y < TileArray.Y; y++)
                 {
-                    _Tiles[x][y] = new Tiles(new (x, y, 0));
+                    _Tiles[x][y] = new Tiles[TileArray.Z];
                 }
             }
-            _player = new Player(_Tiles[TileArray.X / 2][0].Cube.Position);
-            //_player = new Player(new(100, -100, 0));
+            
+
+            for (int x = 0; x < TileArray.X; x++)
+            {
+                for (int y = 0; y < TileArray.Y; y++)
+                {
+                    for (int z = 0; z < TileArray.Y; z++)
+                    {
+                        _Tiles[x][y][z] = new Tiles(new(x, y, z));
+                    }
+                }
+            }
+            //_player = new Player(_Tiles[TileArray.X / 2][0].Cube.Position);
+            _player = new Player(new(100, -100, 0));
             
             base.Initialize();
         }
@@ -110,10 +118,10 @@ namespace tilemap_system
             foreach (Tiles tile in Tiles.CollidingTiles(_player.Rectangle, TileArray, _Tiles)){
                 if (tile.Isfull) { _player.CollisionY(tile.Cube); } 
             }
-            _player.move(new(0, 0, _player.Speed.Z));
-            foreach (Tiles tile in Tiles.CollidingTiles(_player.Rectangle, TileArray, _Tiles)){
-                if (tile.Isfull) { _player.CollisionZ(tile.Cube); }
-            }
+            //_player.move(new(0, 0, _player.Speed.Z));
+            //foreach (Tiles tile in Tiles.CollidingTiles(_player.Rectangle, TileArray, _Tiles)){
+            //    if (tile.Isfull) { _player.CollisionZ(tile.Cube); }
+            //}
 
             _player.update(_keyboardState, _PreviouskeyboardState);
 

@@ -35,12 +35,12 @@ namespace tilemap_system
         {
             if (_speed.X > 0)
             {
-                _position.X = Cube.X - size - 1;
+                _position.X = Cube.X - size - .1f;
                 _speed.X = 0;
             }
             else if (_speed.X < 0)
             {
-                _position.X = Cube.X_OP + 1;
+                _position.X = Cube.X_OP + .1f;
                 _speed.X = 0;
             }
         }
@@ -49,11 +49,11 @@ namespace tilemap_system
             if (_speed.Y > 0)
             {
                 _speed.Y = 0;
-                _position.Y = Cube.Y - size - 1;
+                _position.Y = Cube.Y - size - .1f;
             }
             else if (_speed.Y < 0)
             {
-                _position.Y = Cube.Y_OP + 1;
+                _position.Y = Cube.Y_OP + .1f;
                 _speed.Y = 0;
             }
         }
@@ -62,11 +62,11 @@ namespace tilemap_system
             if (_speed.Z > 0)
             {
                 _speed.Z = 0;
-                _position.Z = Cube.Z - size - 1;
+                _position.Z = Cube.Z - size - .1f;
             }
             else if (_speed.Z < 0)
             {
-                _position.Z = Cube.Z_OP + 1;
+                _position.Z = Cube.Z_OP + .1f;
                 _speed.Z = 0;
             }
         }
@@ -75,8 +75,8 @@ namespace tilemap_system
             _speed.Y += .4f;
 
             Vector2 normalizedSpeed = new();
-            //if (keyboardState.IsKeyDown(Keys.S)) { _speed.Y += 1; }
-            //if (keyboardState.IsKeyDown(Keys.W)) { _speed.Y -= 1; }
+            if (keyboardState.IsKeyDown(Keys.W)) { normalizedSpeed.Y -= 1; }
+            if (keyboardState.IsKeyDown(Keys.S)) { normalizedSpeed.Y += 1; }
             if (keyboardState.IsKeyDown(Keys.A)) { normalizedSpeed.X -= 1; }
             if (keyboardState.IsKeyDown(Keys.D)) { normalizedSpeed.X += 1; }
             normalizedSpeed = General.Normalize(normalizedSpeed, .1f);
@@ -101,6 +101,7 @@ namespace tilemap_system
         public Vector2 XY { get => new(_position.X, _position.Y); set; }
         public Vector3 Speed { get => _speed; set; }
         public Rectangle Rectangle { get => new((int)_position.X, (int)_position.Y, size, size); set; }
+        public Rectangle Cube { get => new((int)_position.X, (int)_position.Y, size, size); set; } // working here
 
 
     }
