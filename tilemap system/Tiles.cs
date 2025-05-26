@@ -16,7 +16,7 @@ namespace tilemap_system
         static int maxHealth = 100;
         static int xSize = 40;
         static int ySize = 40;
-        static int zSize = 1;
+        static int zSize = 40;
         Cube _collideCube = new(0, 0, 0, xSize, ySize, zSize);
         int _health = maxHealth;
         ID _type = ID.Full;
@@ -65,7 +65,8 @@ namespace tilemap_system
                     0,
                     new(),
                     0,
-                    _collideCube.Z
+                    //_collideCube.Z
+                    0
                     );
         }
         public static IntTriple getTileIndex(Vector3 position, Tiles[][][] _Tiles)
@@ -81,7 +82,7 @@ namespace tilemap_system
             int x = (int)(position.X / xSize);
             int y = (int)(position.Y / ySize);
             int z = (int)(position.Z / zSize);
-            if (x > _Tiles.Length || y > _Tiles[0].Length || z > _Tiles[0][0].Length || x < 0 || y < 0)
+            if (x > _Tiles.Length || y > _Tiles[x].Length || z > _Tiles[x][y].Length || x < 0 || y < 0 || z < 0)
             {
                 return new Tiles(new(0, 0, 0));
             }
@@ -96,42 +97,34 @@ namespace tilemap_system
 
 
             for (int x = point1.X; x < point2.X + 1; x++)
-            {
-                for (int y = point1.Y; y < point2.Y + 1; y++)
-                {
-                    for (int z = point1.Z; z < point2.Z + 1; z++)
+            for (int y = point1.Y; y < point2.Y + 1; y++)
+            for (int z = point1.Z; z < point2.Z + 1; z++)
 
-                        if (TileArray.X > x && x > 0 && TileArray.Y > y && y > 0 && TileArray.Y > z && z > 0)
+                        if (TileArray.X > x && x > 0 && TileArray.Y > y && y > 0 && TileArray.Z > z && z > 0)
                         {
                             tiles.Add(_Tiles[x][y][z]);
                         }
-                }
-                { }
-            }
 
             return tiles;
 
         }
-        public static List<Tiles?> getLoaded(Vector2 focusPoint, IntTriple range, IntTriple TileArray, Tiles[][][] _Tiles)
+        public static List<Tiles> getLoaded(Vector3 focusPoint, IntTriple range, IntTriple TileArray, Tiles[][][] _Tiles)
         {
-            IntTriple CameraTileIndex = Tiles.getTileIndex(new(focusPoint, 0), _Tiles);
-            List<Tiles?> tiles = new List<Tiles?>();
+            IntTriple CameraTileIndex = Tiles.getTileIndex(focusPoint, _Tiles);
+            List<Tiles> tiles = new List<Tiles>();
             range = new(
                 (int)Math.Round((float)range.X / xSize) + 1,
                 (int)Math.Round((float)range.Y / ySize) + 1,
-                (int)Math.Round((float)range.Z / ySize) + 1
+                (int)Math.Round((float)range.Z / ZSize) + 1
                 );
 
-            for (int x = Math.Max(CameraTileIndex.X - range.X + 1, 0); x < Math.Min(CameraTileIndex.X + range.X, TileArray.X); x++)
-            {
-                for (int y = Math.Max(CameraTileIndex.Y - range.Y + 1, 0); y < Math.Min(CameraTileIndex.Y + range.Y, TileArray.Y); y++)
-                {
-                    for (int z = Math.Max(CameraTileIndex.Z - range.Z + 1, 0); z < Math.Min(CameraTileIndex.Z + range.Z, TileArray.Z); z++)
-                    {
-                        tiles.Add(_Tiles[x][y][z]);
-                    }
-                }
-            }
+            for (int x = Math.Max(CameraTileIndex.X - range.X, 0); x < Math.Min(CameraTileIndex.X + range.X, TileArray.X); x++)
+            for (int y = Math.Max(CameraTileIndex.Y - range.Y, 0); y < Math.Min(CameraTileIndex.Y + range.Y, TileArray.Y); y++)
+            for (int z = Math.Max(CameraTileIndex.Z - range.Z, 0); z < Math.Min(CameraTileIndex.Z + range.Z, TileArray.Z); z++)
+                        if (TileArray.X > x && x > 0 && TileArray.Y > y && y > 0 && TileArray.Z > z && z > 0)
+                        {
+                            tiles.Add(_Tiles[x][y][z]);
+                        }
 
             return tiles;
         }

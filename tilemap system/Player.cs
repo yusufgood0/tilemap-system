@@ -21,6 +21,10 @@ namespace tilemap_system
         {
             _position = position;
         }
+        public Player(IntTriple position)
+        {
+            _position = new(position.X, position.Y, position.Z);
+        }
         public static void SetTexture(Texture2D texture)
         {
             _texture = texture;
@@ -29,7 +33,14 @@ namespace tilemap_system
         {
             _spritebatch.Draw(_texture, 
                 new Rectangle(Rectangle.X + (int)OFFSET.X, Rectangle.Y + (int)OFFSET.Y, Rectangle.Width, Rectangle.Height), 
-                Color.Red);
+                null,
+                Color.Red,
+                0,
+                new(),
+                0,
+                //_position.Z
+                0
+                );
         }
         public void CollisionX(Cube Cube)
         {
@@ -62,11 +73,11 @@ namespace tilemap_system
             if (_speed.Z > 0)
             {
                 _speed.Z = 0;
-                _position.Z = Cube.Z - size - .1f;
+                _position.Z = Cube.Z - size - 1f;
             }
             else if (_speed.Z < 0)
             {
-                _position.Z = Cube.Z_OP + .1f;
+                _position.Z = Cube.Z_OP + 1f;
                 _speed.Z = 0;
             }
         }
@@ -100,8 +111,9 @@ namespace tilemap_system
 
         public Vector2 XY { get => new(_position.X, _position.Y); set; }
         public Vector3 Speed { get => _speed; set; }
+        public Vector3 Position { get => _position; set; }
         public Rectangle Rectangle { get => new((int)_position.X, (int)_position.Y, size, size); set; }
-        public Rectangle Cube { get => new((int)_position.X, (int)_position.Y, size, size); set; } // working here
+        public Cube Cube { get => new(_position, size, size, size); set; } // working here
 
 
     }

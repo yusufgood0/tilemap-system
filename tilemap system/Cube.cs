@@ -29,6 +29,12 @@ namespace tilemap_system
             this.Y = triple.Y; this.YSize = ySize;
             this.Z = triple.Z; this.ZSize = zSize;
         }
+        public Cube(Vector3 vector, int xSize, int ySize, int zSize)
+        {
+            this.X = (int)vector.X; this.XSize = xSize;
+            this.Y = (int)vector.Y; this.YSize = ySize;
+            this.Z = (int)vector.Z; this.ZSize = zSize;
+        }
 
         public int X { get; set; }
         public int X_OP { get => X + XSize; }
