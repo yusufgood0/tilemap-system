@@ -12,6 +12,8 @@ namespace tilemap_system
         private SpriteBatch _spriteBatch;
         KeyboardState _keyboardState, _PreviouskeyboardState;
         MouseState _mouseState = new();
+
+        private IntTriple renderDistance = new(100, 100, 100);
         static Vector2 screenSize = new();
         static readonly IntTriple TileArray = new(200, 200, 200);
 
@@ -19,7 +21,6 @@ namespace tilemap_system
         Vector2 offset;
         Point PlayerTileIndex;
 
-        private IntTriple renderDistance = new(100, 100, 100);
         private Tiles[][][] _Tiles = new Tiles[TileArray.X][][];
         private Player _player;
         private Texture2D square;

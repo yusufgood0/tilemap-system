@@ -147,6 +147,9 @@ namespace tilemap_system
         }
 
         public Cube Cube { get => _collideCube; set; }
+        public int X { get => _collideCube.X; set; }
+        public int Y { get => _collideCube.Y; set; }
+        public int Z { get => _collideCube.Z; set; }
         static public int XSize { get => xSize; set; }
         static public int YSize { get => ySize; set; }
         static public int ZSize { get => zSize; set; }
