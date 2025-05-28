@@ -14,7 +14,7 @@ namespace tilemap_system
         MouseState _mouseState = new();
 
         static Vector2 screenSize = new();
-        static readonly IntTriple TileArray = new(200, 200, 200);
+        static readonly IntTriple TileArray = new(1, 1, 1);
 
         //draw
         Vector2 offset;
