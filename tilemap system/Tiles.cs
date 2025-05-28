@@ -132,8 +132,7 @@ namespace tilemap_system
         {
             if (Isfull)
             {
-                _health = Math.Min(_health + 1, maxHealth);
-                _type = ID.Full;
+                _health = maxHealth;
             }
         }
         public void MineTile(int damage)

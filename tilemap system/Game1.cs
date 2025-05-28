@@ -11,10 +11,9 @@ namespace tilemap_system
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
         KeyboardState _keyboardState, _PreviouskeyboardState;
-        MouseState _mouseState = new();
+        MouseState _mouseState, _previousMouseState;
 
-        private IntTriple renderDistance = new(100, 100, 100);
-        static Vector2 screenSize = new();
+        private IntTriple renderDistance = new(400, 400, 400);
         static readonly IntTriple TileArray = new(200, 200, 200);
 
         //draw
@@ -35,13 +34,13 @@ namespace tilemap_system
 
         protected override void Initialize()
         {
-            screenSize = new(
-                GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
-                GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height
-                );
-            _graphics.IsFullScreen = true;
-            _graphics.PreferredBackBufferWidth = (int)screenSize.X;
-            _graphics.PreferredBackBufferHeight = (int)screenSize.Y;
+            //screenSize = new(
+            //    GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
+            //    GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height
+            //    );
+            _graphics.IsFullScreen = false;
+            _graphics.PreferredBackBufferWidth = (int)renderDistance.X*2;
+            _graphics.PreferredBackBufferHeight = (int)renderDistance.Y*2;
             _graphics.ApplyChanges();
             // TODO: Add your initialization logic here
 
@@ -93,10 +92,12 @@ namespace tilemap_system
             //    foreach (Tiles tile in Tiles.CollidingTiles(new(_mouseState.X, _mouseState.Y, -100, 1, 1, 1000), TileArray, _Tiles))
             //        (tile).MineTile(3);
             //}
-
-            foreach (Tiles tile in Tiles.getLoaded(_player.Position, renderDistance, TileArray, _Tiles))
+            if (General.OnRelease(_mouseState, _previousMouseState))
             {
-                tile.Update();
+                foreach (Tiles tile in Tiles.getLoaded(_player.Position, renderDistance, TileArray, _Tiles))
+                {
+                    tile.Update();
+                }
             }
             foreach (Tiles tile in Tiles.CollidingTiles(new((int)_player.Position.X, _player.Cube.Y_OP, (int)_player.Position.Z, _player.Cube.XSize, 3, _player.Cube.ZSize), TileArray, _Tiles))
             {
@@ -115,7 +116,7 @@ namespace tilemap_system
             foreach (Tiles tile in Tiles.CollidingTiles(_player.Cube, TileArray, _Tiles))
             {
                 if (tile.Isfull) { _player.CollisionX(tile.Cube); }
-                (tile).MineTile(3);
+                (tile).MineTile(15);
             }
             _player.move(new(0, _player.Speed.Y, 0));
             foreach (Tiles tile in Tiles.CollidingTiles(_player.Cube, TileArray, _Tiles))
@@ -135,7 +136,7 @@ namespace tilemap_system
             _player.update(_keyboardState, _PreviouskeyboardState); // updates Player._speed with movement and stuff
 
 
-
+            _previousMouseState = _mouseState;
             _PreviouskeyboardState = _keyboardState;
             // TODO: Add your update logic here
 
@@ -145,7 +146,7 @@ namespace tilemap_system
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            offset = screenSize / 2 - _player.XY;
+            offset = renderDistance.XY - _player.XY - new Vector2(_player.Cube.XSize/2, _player.Cube.YSize / 2);
             _spriteBatch.Begin();
             //foreach (Tiles tile in Tiles.CollidingTiles(new((int)(_player..X - screenSize.X / 2), (int)(_player.XY.Y - screenSize.Y / 2), (int)screenSize.X, (int)screenSize.Y), TileArray, _Tiles))
             //{
