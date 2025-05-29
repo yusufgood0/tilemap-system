@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -29,9 +28,10 @@ namespace tilemap_system
         {
             _texture = texture;
         }
-        public void Draw(SpriteBatch _spritebatch, Vector2 OFFSET)
+        public void Draw(SpriteBatch spriteBatch, Vector2 OFFSET)
         {
-            _spritebatch.Draw(_texture, 
+            spriteBatch.Begin();
+            spriteBatch.Draw(_texture, 
                 new Rectangle(Rectangle.X + (int)OFFSET.X, Rectangle.Y + (int)OFFSET.Y, Rectangle.Width, Rectangle.Height), 
                 null,
                 Color.Red,
@@ -41,6 +41,7 @@ namespace tilemap_system
                 //_position.Z
                 0
                 );
+            spriteBatch.End();
         }
         public void CollisionX(Cube Cube)
         {
@@ -83,21 +84,23 @@ namespace tilemap_system
         }
         public void update(KeyboardState keyboardState, KeyboardState PreviouskeyboardState)
         {
-            _speed.Y += .4f;
+            //_speed.Y += .4f;
 
             Vector2 normalizedSpeed = new();
-            if (keyboardState.IsKeyDown(Keys.W)) { normalizedSpeed.Y -= 1; }
-            if (keyboardState.IsKeyDown(Keys.S)) { normalizedSpeed.Y += 1; }
-            if (keyboardState.IsKeyDown(Keys.A)) { normalizedSpeed.X -= 1; }
-            if (keyboardState.IsKeyDown(Keys.D)) { normalizedSpeed.X += 1; }
-            normalizedSpeed = General.Normalize(normalizedSpeed, .1f);
+            if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Jump)) { _speed.Y -= 1; }
+            if (keyboardState.IsKeyDown((Keys)Game1.Keybind.sneak)) { _speed.Y += 1; }
+            if (keyboardState.IsKeyDown((Keys)Game1.Keybind.up)) { normalizedSpeed.Y -= 1; }
+            if (keyboardState.IsKeyDown((Keys)Game1.Keybind.down)) { normalizedSpeed.Y += 1; }
+            if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Left)) { normalizedSpeed.X -= 1; }
+            if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Right)) { normalizedSpeed.X += 1; }
+            normalizedSpeed = General.Normalize(normalizedSpeed, 1f);
 
             _speed.X += normalizedSpeed.X;
             _speed.Z += normalizedSpeed.Y;
 
 
             _speed.X *= .75f;
-            _speed.Y *= .99f;
+            _speed.Y *= .75f;
             _speed.Z *= .75f;
         }
         public void jump()

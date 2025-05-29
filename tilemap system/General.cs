@@ -47,7 +47,7 @@ namespace tilemap_system
             return vector;
         }
 
-        public static Vector2 toVector2(Vector3 vector)
+        public static Vector2 ToVector2(Vector3 vector)
         {
             return new(vector.X, vector.Y);
         }

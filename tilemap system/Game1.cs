@@ -8,22 +8,31 @@ namespace tilemap_system
 {
     public class Game1 : Game
     {
-        private GraphicsDeviceManager _graphics;
+        private readonly GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
         KeyboardState _keyboardState, _PreviouskeyboardState;
         MouseState _mouseState, _previousMouseState;
 
-        private IntTriple renderDistance = new(400, 400, 400);
+        private readonly IntTriple renderDistance = new(400, 400, 400);
         static readonly IntTriple TileArray = new(200, 200, 200);
 
         //draw
         Vector2 offset;
-        Point PlayerTileIndex;
+        //Point PlayerTileIndex;
 
         private Tiles[][][] _Tiles = new Tiles[TileArray.X][][];
         private Player _player;
         private Texture2D square;
 
+        public enum Keybind
+        {
+            up = Keys.W, 
+            down = Keys.S,
+            Left = Keys.A, 
+            Right = Keys.D,
+            Jump = Keys.Space,
+            sneak = Keys.LeftShift
+        }
 
         public Game1()
         {
@@ -61,7 +70,7 @@ namespace tilemap_system
                 {
                     for (int z = 0; z < TileArray.Z; z++)
                     {
-                        _Tiles[x][y][z] = new Tiles(new(x, y, z));
+                        _Tiles[x][y][z] = new Tiles(x, y, z);
                     }
                 }
             }
@@ -74,7 +83,7 @@ namespace tilemap_system
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            Tiles.setTexture(Content.Load<Texture2D>("square"));
+            Tiles.SetTexture(Content.Load<Texture2D>("square"));
             Player.SetTexture(Content.Load<Texture2D>("square"));
             square = Content.Load<Texture2D>("square");
             // TODO: use this.Content to load your game content here
@@ -99,17 +108,17 @@ namespace tilemap_system
                     tile.Update();
                 }
             }
-            foreach (Tiles tile in Tiles.CollidingTiles(new((int)_player.Position.X, _player.Cube.Y_OP, (int)_player.Position.Z, _player.Cube.XSize, 3, _player.Cube.ZSize), TileArray, _Tiles))
-            {
-                if (tile.Isfull)
-                {
-                    if (General.OnPress(_keyboardState, _PreviouskeyboardState, Keys.Space))
-                    {
-                        _player.jump();
-                        break;
-                    }
-                }
-            }
+            //foreach (Tiles tile in Tiles.CollidingTiles(new((int)_player.Position.X, _player.Cube.Y_OP, (int)_player.Position.Z, _player.Cube.XSize, 3, _player.Cube.ZSize), TileArray, _Tiles))
+            //{
+            //    if (tile.Isfull)
+            //    {
+            //        if (General.OnPress(_keyboardState, _PreviouskeyboardState, (Keys)Keybind.Jump))
+            //        {
+            //            _player.jump();
+            //            break;
+            //        }
+            //    }
+            //}
 
             //Does Player Collision & movement
             _player.move(new(_player.Speed.X, 0, 0)); 
@@ -147,7 +156,7 @@ namespace tilemap_system
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
             offset = renderDistance.XY - _player.XY - new Vector2(_player.Cube.XSize/2, _player.Cube.YSize / 2);
-            _spriteBatch.Begin();
+            
             //foreach (Tiles tile in Tiles.CollidingTiles(new((int)(_player..X - screenSize.X / 2), (int)(_player.XY.Y - screenSize.Y / 2), (int)screenSize.X, (int)screenSize.Y), TileArray, _Tiles))
             //{
             //    if (tile.Isfull)
@@ -159,11 +168,12 @@ namespace tilemap_system
             {
                 //if(tile.Cube.Z == 0)
                 if (tile.Cube.Z < _player.Cube.Z)
-                    tile.draw(_spriteBatch, offset);
+                    tile.Draw(_spriteBatch, offset);
             }
             _player.Draw(_spriteBatch, offset);
 
-            _spriteBatch.End();
+            //for ()
+
             base.Draw(gameTime);
         }
     }

@@ -9,38 +9,38 @@ using System.Threading.Tasks;
 
 namespace tilemap_system
 {
-    internal class Cube
+    internal struct Cube
     {
         public Cube(int x, int y, int z, int xSize, int ySize, int zSize)
         {
-            this.X = x; this.XSize = xSize;
-            this.Y = y; this.YSize = ySize;
-            this.Z = z; this.ZSize = zSize;
+            X = x; XSize = xSize;
+            Y = y; YSize = ySize;
+            Z = z; ZSize = zSize;
         }
         public Cube(IntTriple triple, int xSize, int ySize, int zSize)
         {
-            this.X = triple.X; this.XSize = xSize;
-            this.Y = triple.Y; this.YSize = ySize;
-            this.Z = triple.Z; this.ZSize = zSize;
+            X = triple.X; XSize = xSize;
+            Y = triple.Y; YSize = ySize;
+            Z = triple.Z; ZSize = zSize;
         }
         public Cube(Vector3 vector, int xSize, int ySize, int zSize)
         {
-            this.X = (int)vector.X; this.XSize = xSize;
-            this.Y = (int)vector.Y; this.YSize = ySize;
-            this.Z = (int)vector.Z; this.ZSize = zSize;
+            X = (int)vector.X; XSize = xSize;
+            Y = (int)vector.Y; YSize = ySize;
+            Z = (int)vector.Z; ZSize = zSize;
         }
 
         public int X { get; set; }
-        public int X_OP { get => X + XSize; }
+        public readonly int X_OP { get => X + XSize; }
         public int Y { get; set; }
-        public int Y_OP { get => Y + YSize; }
+        public readonly int Y_OP { get => Y + YSize; }
         public int Z { get; set; }
-        public int Z_OP { get => Z + ZSize; }
+        public readonly int Z_OP { get => Z + ZSize; }
 
         public int XSize { get; set; }
         public int YSize { get; set; }
         public int ZSize { get; set; }
-        public Rectangle Rectangle { get => new (X, Y, XSize, YSize); }
-        public IntTriple Position { get => new(X, Y, Z); }
+        public readonly Rectangle Rectangle { get => new (X, Y, XSize, YSize); }
+        public readonly IntTriple Position { get => new(X, Y, Z); }
     }
 }

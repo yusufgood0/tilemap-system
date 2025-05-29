@@ -6,10 +6,9 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Text;
 using System.Threading.Tasks;
-
 namespace tilemap_system
 {
-    internal class Ray
+    internal struct Ray
     {
         private Vector3 _direction;
         private float _distanceTraveled = 0;
@@ -28,10 +27,8 @@ namespace tilemap_system
             _direction = direction;
         }
 
-        public IntTriple update()
+        public IntTriple update(int travelDistance)
         {
-
-            int travelDistance = 1;
             _distanceTraveled += travelDistance;
             _position += General.Normalize(_direction, travelDistance);
             return new(_position);

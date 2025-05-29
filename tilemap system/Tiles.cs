@@ -13,10 +13,10 @@ namespace tilemap_system
     internal class Tiles
     {
         static Texture2D _texture;
-        static int maxHealth = 100;
-        static int xSize = 40;
-        static int ySize = 40;
-        static int zSize = 40;
+        static readonly int maxHealth = 100;
+        static readonly int xSize = 40;
+        static readonly int ySize = 40;
+        static readonly int zSize = 40;
         Cube _collideCube = new(0, 0, 0, xSize, ySize, zSize);
         int _health = maxHealth;
         ID _type = ID.Full;
@@ -26,20 +26,18 @@ namespace tilemap_system
             Full,
         }
 
-        public Tiles(Vector3 point)
+        public Tiles(int X, int Y, int Z)
         {
-            _collideCube.X = (int)point.X * xSize;
-            _collideCube.Y = (int)point.Y * ySize;
-            _collideCube.Z = (int)point.Z * zSize;
-            //_collideCube = new((int)point.X * xSize, (int)point.Y * ySize, (int)point.Z * zSize, xSize, ySize, zSize);
-
+            _collideCube.X = X * xSize;
+            _collideCube.Y = Y * ySize;
+            _collideCube.Z = Z * zSize;
         }
 
-        public static void setTexture(Texture2D texture)
+        public static void SetTexture(Texture2D texture)
         {
             _texture = texture;
         }
-        public void draw(SpriteBatch spriteBatch, Vector2 offset)
+        public void Draw(SpriteBatch spriteBatch, Vector2 offset)
         {
             Color color = Color.White;
             switch (_type)
@@ -54,6 +52,7 @@ namespace tilemap_system
             }
 
             //int color = (int)((float)_collideCube.Z);
+            spriteBatch.Begin();
             spriteBatch.Draw(_texture,
                     new Rectangle(
                         (int)_collideCube.X + (int)offset.X,
@@ -68,8 +67,9 @@ namespace tilemap_system
                     //_collideCube.Z
                     0
                     );
+            spriteBatch.End();
         }
-        public static IntTriple getTileIndex(Vector3 position, Tiles[][][] _Tiles)
+        public static IntTriple getTileIndex(Vector3 position)
         {
             int x = (int)(position.X / xSize);
             int y = (int)(position.Y / ySize);
@@ -77,23 +77,23 @@ namespace tilemap_system
             return new IntTriple(x, y, z);
         }
 
-        public static Tiles? getTile(Vector3 position, Tiles[][][] _Tiles)
+        public static Tiles getTile(Vector3 position, Tiles[][][] _Tiles)
         {
             int x = (int)(position.X / xSize);
             int y = (int)(position.Y / ySize);
             int z = (int)(position.Z / zSize);
             if (x > _Tiles.Length || y > _Tiles[x].Length || z > _Tiles[x][y].Length || x < 0 || y < 0 || z < 0)
             {
-                return new Tiles(new(0, 0, 0));
+                return new Tiles(0, 0, 0);
             }
             return _Tiles[x][y][z];
         }
         public static List<Tiles> CollidingTiles(Cube cube, IntTriple TileArray, Tiles[][][] _Tiles)
         {
-            List<Tiles?> tiles = new List<Tiles?>();
+            List<Tiles> tiles = new List<Tiles>();
 
-            IntTriple point1 = getTileIndex(new Vector3(cube.X, cube.Y, cube.Z), _Tiles);
-            IntTriple point2 = getTileIndex(new Vector3(cube.X_OP, cube.Y_OP, cube.Z_OP), _Tiles);
+            IntTriple point1 = getTileIndex(new Vector3(cube.X, cube.Y, cube.Z));
+            IntTriple point2 = getTileIndex(new Vector3(cube.X_OP, cube.Y_OP, cube.Z_OP));
 
 
             for (int x = point1.X; x < point2.X + 1; x++)
@@ -110,7 +110,7 @@ namespace tilemap_system
         }
         public static List<Tiles> getLoaded(Vector3 focusPoint, IntTriple range, IntTriple TileArray, Tiles[][][] _Tiles)
         {
-            IntTriple CameraTileIndex = Tiles.getTileIndex(focusPoint, _Tiles);
+            IntTriple CameraTileIndex = Tiles.getTileIndex(focusPoint);
             List<Tiles> tiles = new List<Tiles>();
             range = new(
                 (int)Math.Round((float)range.X / xSize) + 1,
