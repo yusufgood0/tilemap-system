@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace tilemap_system
 {
-    public class General
+    internal class General
     {
         public static bool OnPress(MouseState mouseState, MouseState previousMouseState)
         {
@@ -46,10 +46,27 @@ namespace tilemap_system
 
             return vector;
         }
-
+        public static IntTriple clamp(IntTriple Triple, IntTriple min, IntTriple max)
+        {
+            return new IntTriple(
+                Math.Clamp(Triple.X, min.X, max.X),
+                Math.Clamp(Triple.Y, min.Y, max.Y),
+                Math.Clamp(Triple.Z, min.Z, max.Z)
+                );
+        }
+        public static Color colorMultiply(Color color, float num)
+        {
+            return new Color (color.R * num, color.G * num, color.B * num, color.A);
+        }
         public static Vector2 ToVector2(Vector3 vector)
         {
             return new(vector.X, vector.Y);
+        }
+        public static Vector2 AngleToVector2(double angle)
+        {
+            Vector2 Vector = new((float)Math.Sin(angle), (float)Math.Cos(angle));
+            Vector.Normalize();
+            return Vector;
         }
     }
 }

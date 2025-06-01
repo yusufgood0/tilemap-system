@@ -14,6 +14,12 @@ namespace tilemap_system
         public int X { get; set; }
         public int Y { get; set; }
         public int Z { get; set; }
+        public IntTriple()
+        {
+            X = 0;
+            Y = 0;
+            Z = 0;
+        }
 
         public IntTriple(int a, int b, int c)
         {

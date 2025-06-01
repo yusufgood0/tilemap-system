@@ -40,6 +40,8 @@ namespace tilemap_system
         public int XSize { get; set; }
         public int YSize { get; set; }
         public int ZSize { get; set; }
+
+        public readonly Vector3 Center { get => new(X + XSize / 2, Y + YSize / 2, Z + ZSize / 2); }
         public readonly Rectangle Rectangle { get => new (X, Y, XSize, YSize); }
         public readonly IntTriple Position { get => new(X, Y, Z); }
     }

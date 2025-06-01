@@ -15,6 +15,7 @@ namespace tilemap_system
         static int size = 30;
         Vector3 _position = new();
         Vector3 _speed = new();
+        public Vector2 _angle = Vector2.Zero;
 
         public Player(Vector3 position)
         {
@@ -89,10 +90,11 @@ namespace tilemap_system
             Vector2 normalizedSpeed = new();
             if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Jump)) { _speed.Y -= 1; }
             if (keyboardState.IsKeyDown((Keys)Game1.Keybind.sneak)) { _speed.Y += 1; }
-            if (keyboardState.IsKeyDown((Keys)Game1.Keybind.up)) { normalizedSpeed.Y -= 1; }
-            if (keyboardState.IsKeyDown((Keys)Game1.Keybind.down)) { normalizedSpeed.Y += 1; }
-            if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Left)) { normalizedSpeed.X -= 1; }
-            if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Right)) { normalizedSpeed.X += 1; }
+            //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.up)) { normalizedSpeed.Y -= 1; }
+            //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.down)) { normalizedSpeed.Y += 1; }
+            //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Left)) { normalizedSpeed.X -= 1; }
+            //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Right)) { normalizedSpeed.X += 1; }
+            MoveKeyPressed(keyboardState);
             normalizedSpeed = General.Normalize(normalizedSpeed, 1f);
 
             _speed.X += normalizedSpeed.X;
@@ -111,7 +113,42 @@ namespace tilemap_system
         {
             _position += vector;
         }
+        enum Direction
+        {
+            UP = Keys.W,
+            DOWN = Keys.S,
+            LEFT = Keys.A,
+            RIGHT = Keys.D
+        }
+        public void MoveKeyPressed(KeyboardState keyboardState)
+        {
+            Vector2 speedChange = new();
 
+            if (keyboardState.IsKeyDown((Keys)Direction.UP))
+            {
+                speedChange += General.AngleToVector2(_angle.X);
+            }
+            if (keyboardState.IsKeyDown((Keys)Direction.DOWN))
+            {
+                speedChange -= General.AngleToVector2(_angle.X);
+            }
+            if (keyboardState.IsKeyDown((Keys)Direction.LEFT))
+            {
+                speedChange += General.AngleToVector2(_angle.X - (float)Math.PI / 2);
+            }
+            if (keyboardState.IsKeyDown((Keys)Direction.RIGHT))
+            {
+                speedChange += General.AngleToVector2(_angle.X + (float)Math.PI / 2);
+            }
+
+            if (speedChange != new Vector2(0, 0))
+            {
+                speedChange.Normalize();
+                _speed.X += speedChange.X * 1;
+                _speed.Z += speedChange.Y * 1;
+
+            }
+        }
         public Vector2 XY { get => new(_position.X, _position.Y); set; }
         public Vector3 Speed { get => _speed; set; }
         public Vector3 Position { get => _position; set; }

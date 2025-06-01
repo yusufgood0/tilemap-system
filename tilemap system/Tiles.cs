@@ -12,25 +12,30 @@ namespace tilemap_system
 {
     internal class Tiles
     {
-        static Texture2D _texture;
+        public static Texture2D _texture;
         static readonly int maxHealth = 100;
         static readonly int xSize = 40;
         static readonly int ySize = 40;
         static readonly int zSize = 40;
+
+        public Color _color { get; set; }
         Cube _collideCube = new(0, 0, 0, xSize, ySize, zSize);
         int _health = maxHealth;
-        ID _type = ID.Full;
-        enum ID
+        ID _type;
+        public enum ID
         {
-            Empty,
-            Full,
+            Empty = 0,
+            Full = 1,
+            Grass = 2
         }
 
-        public Tiles(int X, int Y, int Z)
+        public Tiles(int X, int Y, int Z, ID type)
         {
+            _type = type;
             _collideCube.X = X * xSize;
             _collideCube.Y = Y * ySize;
             _collideCube.Z = Z * zSize;
+            updateTexture();
         }
 
         public static void SetTexture(Texture2D texture)
@@ -39,19 +44,6 @@ namespace tilemap_system
         }
         public void Draw(SpriteBatch spriteBatch, Vector2 offset)
         {
-            Color color = Color.White;
-            switch (_type)
-            {
-                case ID.Full:
-                    int value = (int)((float)_health / maxHealth * 255);
-                    color = new(value, value, 0);
-                    break;
-                case ID.Empty:
-                    color = new(125, 125, 125);
-                    break;
-            }
-
-            //int color = (int)((float)_collideCube.Z);
             spriteBatch.Begin();
             spriteBatch.Draw(_texture,
                     new Rectangle(
@@ -60,7 +52,7 @@ namespace tilemap_system
                         _collideCube.XSize,
                         _collideCube.YSize),
                     null,
-                    color,
+                    _color,
                     0,
                     new(),
                     0,
@@ -76,6 +68,14 @@ namespace tilemap_system
             int z = (int)(position.Z / zSize);
             return new IntTriple(x, y, z);
         }
+        public static IntTriple getTileIndex(IntTriple position)
+        {
+            return new IntTriple(
+                position.X / xSize,
+                position.Y / ySize,
+                position.Z / zSize
+                );
+        }
 
         public static Tiles getTile(Vector3 position, Tiles[][][] _Tiles)
         {
@@ -84,7 +84,7 @@ namespace tilemap_system
             int z = (int)(position.Z / zSize);
             if (x > _Tiles.Length || y > _Tiles[x].Length || z > _Tiles[x][y].Length || x < 0 || y < 0 || z < 0)
             {
-                return new Tiles(0, 0, 0);
+                return new Tiles(0, 0, 0, ID.Empty);
             }
             return _Tiles[x][y][z];
         }
@@ -97,8 +97,8 @@ namespace tilemap_system
 
 
             for (int x = point1.X; x < point2.X + 1; x++)
-            for (int y = point1.Y; y < point2.Y + 1; y++)
-            for (int z = point1.Z; z < point2.Z + 1; z++)
+                for (int y = point1.Y; y < point2.Y + 1; y++)
+                    for (int z = point1.Z; z < point2.Z + 1; z++)
 
                         if (TileArray.X > x && x > 0 && TileArray.Y > y && y > 0 && TileArray.Z > z && z > 0)
                         {
@@ -119,8 +119,8 @@ namespace tilemap_system
                 );
 
             for (int x = Math.Max(CameraTileIndex.X - range.X, 0); x < Math.Min(CameraTileIndex.X + range.X + 1, TileArray.X); x++)
-            for (int y = Math.Max(CameraTileIndex.Y - range.Y, 0); y < Math.Min(CameraTileIndex.Y + range.Y + 1, TileArray.Y); y++)
-            for (int z = Math.Max(CameraTileIndex.Z - range.Z, 0); z < Math.Min(CameraTileIndex.Z + range.Z + 1, TileArray.Z); z++)
+                for (int y = Math.Max(CameraTileIndex.Y - range.Y, 0); y < Math.Min(CameraTileIndex.Y + range.Y + 1, TileArray.Y); y++)
+                    for (int z = Math.Max(CameraTileIndex.Z - range.Z, 0); z < Math.Min(CameraTileIndex.Z + range.Z + 1, TileArray.Z); z++)
                         if (TileArray.X > x && x > 0 && TileArray.Y > y && y > 0 && TileArray.Z > z && z > 0)
                         {
                             tiles.Add(_Tiles[x][y][z]);
@@ -128,12 +128,26 @@ namespace tilemap_system
 
             return tiles;
         }
+        void updateTexture()
+        {
+            switch (_type)
+            {
+                case ID.Full:
+                    int value = (int)((float)_health / maxHealth * 255);
+                    _color = new(value, value, 0);
+                    break;
+                case ID.Empty:
+                    _color = new(125, 125, 125);
+                    break;
+                case ID.Grass:
+                    _color = Color.Green;
+                    break;
+            }
+        }
         public void Update()
         {
-            if (Isfull)
-            {
-                _health = maxHealth;
-            }
+            updateTexture();
+            _health = maxHealth;
         }
         public void MineTile(int damage)
         {
