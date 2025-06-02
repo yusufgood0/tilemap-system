@@ -49,9 +49,9 @@ namespace tilemap_system
         public static IntTriple clamp(IntTriple Triple, IntTriple min, IntTriple max)
         {
             return new IntTriple(
-                Math.Clamp(Triple.X, min.X, max.X),
-                Math.Clamp(Triple.Y, min.Y, max.Y),
-                Math.Clamp(Triple.Z, min.Z, max.Z)
+                Math.Clamp(Triple.X, min.X, max.X-1),
+                Math.Clamp(Triple.Y, min.Y, max.Y - 1),
+                Math.Clamp(Triple.Z, min.Z, max.Z - 1)
                 );
         }
         public static Color colorMultiply(Color color, float num)

@@ -28,9 +28,9 @@ namespace tilemap_system
         /* draw */
         Vector2 offset;
         Vector2 screenSize;
-        List<Ray> drawRays = new List<Ray>();
+        List<DDA_ray> drawRays = new List<DDA_ray>();
         Vector2 FOV = new(3, 3);
-        Point resolution = new(60, 60);
+        Point resolution = new(100, 100);
 
         //Point PlayerTileIndex;
         private List<Tiles> loadedTiles = new List<Tiles>();
@@ -164,7 +164,7 @@ namespace tilemap_system
             if (_player._angle.X < 0)
                 _player._angle.X += 2 * (float)Math.PI;
 
-            _player._angle.Y = MathHelper.Clamp(_player._angle.Y, -MathF.PI / 3f, MathF.PI / 3f);
+            _player._angle.Y = MathHelper.Clamp(_player._angle.Y, -MathF.PI / 2f, MathF.PI / 2f);
 
             Ray ray = new(_player._angle, _player.Cube.Center);
 
@@ -239,20 +239,18 @@ namespace tilemap_system
                 {
                     for (int y = -resolution.Y / 2; y < resolution.Y / 2; y++)
                     {
-                        drawRays.Add(new Ray(new Vector2(_player._angle.X + (float)(x) / resolution.X / 2 * FOV.X, _player._angle.Y + (float)(y) / resolution.Y / 2 * FOV.Y), _player.Cube.Center));
+                        drawRays.Add(new DDA_ray(new Vector2(_player._angle.X + (float)(x) / resolution.X / 2 * FOV.X, _player._angle.Y + (float)(y) / resolution.Y / 2 * FOV.Y), _player.Cube.Center));
                     }
                 }
-
                 for (int index = 0; index < drawRays.Count; index++)
                 {
                     drawRays[index]._color = Color.Blue;
-                    for (int l = 0; l < 500; l++)
+                    for (int l = 0; l < 50; l++)
                     {
-                        drawRays[index].update(1);
-                        IntTriple tileIndex = General.clamp(Tiles.getTileIndex(drawRays[index]._position), new(0, 0, 0), TileArray);
+                        IntTriple tileIndex = General.clamp(Tiles.getTileIndex(drawRays[index].Update()), new(0, 0, 0), TileArray);
                         if (_Tiles[tileIndex.X][tileIndex.Y][tileIndex.Z].Isfull)
                         {
-                            drawRays[index]._color = (_Tiles[tileIndex.X][tileIndex.Y][tileIndex.Z]._color) * ((float)(500f - drawRays[index].DistanceTraveled) / 500f);
+                            drawRays[index]._color = (_Tiles[tileIndex.X][tileIndex.Y][tileIndex.Z]._color) * ((float)(500f - drawRays[index].lowestDistance) / 500f);
                             break;
                         }
                     }

@@ -35,59 +35,52 @@ namespace tilemap_system
             (float)(Math.Cos(angle.Y) * Math.Cos(angle.X))
                 ), 1);
             X_direction = new Vector3(1, _direction.Y / _direction.X, _direction.Z / _direction.X);
+            if (_direction.X < 0) X_direction *= -1;
             Y_direction = new Vector3(_direction.X / _direction.Y, 1, _direction.Z / _direction.Y);
+            if (_direction.Y < 0) Y_direction *= -1;
             Z_direction = new Vector3(_direction.X / _direction.Z, _direction.Y / _direction.Z, 1);
+            if (_direction.Z < 0) Z_direction *= -1;
+            FirstMove();
         }
-        public Vector3 FirstMove()
+
+        public void FirstMove()
         {
-            Xpos += X_direction * (Tiles.XSize - Xpos.X % Tiles.XSize);
-            Ypos += Y_direction * (Tiles.YSize - Ypos.Y % Tiles.YSize);
-            Zpos += Z_direction * (Tiles.ZSize - Zpos.X % Tiles.ZSize);
+            if (_direction.X < 0) Xpos += X_direction *                (Xpos.X % Tiles.XSize)   + _direction;
+            else                  Xpos += X_direction * (Tiles.XSize - (Xpos.X % Tiles.XSize))  + _direction;
+            if (_direction.Y < 0) Ypos += Y_direction *                (Ypos.Y % Tiles.YSize)   + _direction;
+            else                  Ypos += Y_direction * (Tiles.YSize - (Ypos.Y % Tiles.YSize))  + _direction;
+            if (_direction.Z < 0) Zpos += Z_direction *                (Zpos.Z % Tiles.ZSize)   + _direction;
+            else                  Zpos += Z_direction * (Tiles.ZSize - (Zpos.Z % Tiles.ZSize))  + _direction;
             X_direction *= Tiles.XSize;
             Y_direction *= Tiles.YSize;
             Z_direction *= Tiles.ZSize;
-
-            float Xdistance = Vector3.Distance(_origin, Xpos);
-            float Ydistance = Vector3.Distance(_origin, Ypos);
-            float Zdistance = Vector3.Distance(_origin, Zpos);
-            float lowest = Math.Min(Math.Min(Xdistance, Ydistance), Zdistance);
-
-            Vector3 returnValue;
-            switch (lowest)
-            {
-                case float value when value == Xdistance:
-                    Xpos += X_direction;
-                    returnValue = Xpos; break;
-                case float value when value == Ydistance:
-                    Ypos += Y_direction;
-                    returnValue = Ypos; break;
-                default:
-                    Zpos += Z_direction;
-                    returnValue = Zpos; break;
-            }
-            return returnValue;
+            
         }
         public Vector3 Update()
         {
             float Xdistance = Vector3.Distance(_origin, Xpos);
             float Ydistance = Vector3.Distance(_origin, Ypos);
             float Zdistance = Vector3.Distance(_origin, Zpos);
-            float lowest = Math.Min(Math.Min(Xdistance, Ydistance), Zdistance);
+            lowestDistance = Math.Min(Math.Min(Xdistance, Ydistance), Zdistance);
 
             Vector3 returnValue;
-            switch (lowest)
+            if (lowestDistance == Xdistance)
             {
-                case float value when value == Xdistance:
-                    Xpos += X_direction;
-                    returnValue = Xpos; break;
-                case float value when value == Ydistance:
-                    Ypos += Y_direction;
-                    returnValue = Ypos; break;
-                default:
-                    Zpos += Z_direction;
-                    returnValue = Zpos; break;
+                returnValue = Xpos;
+                Xpos += X_direction;
+            }
+            else if (lowestDistance == Ydistance)
+            {
+                returnValue = Ypos;
+                Ypos += Y_direction;
+            }
+            else 
+            {
+                returnValue = Zpos;
+                Zpos += Z_direction;
             }
             return returnValue;
         }
+        public float lowestDistance { get; set; }
     }
 }
