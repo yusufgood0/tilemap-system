@@ -21,6 +21,7 @@ namespace tilemap_system
         public Vector3 X_direction;
         public Vector3 Y_direction;
         public Vector3 Z_direction;
+
         public Color _color { get; set; }
         public DDA_ray(Vector2 angle, Vector3 position)
         {
@@ -54,7 +55,6 @@ namespace tilemap_system
             X_direction *= Tiles.XSize;
             Y_direction *= Tiles.YSize;
             Z_direction *= Tiles.ZSize;
-            
         }
         public Vector3 Update()
         {

@@ -35,6 +35,10 @@ namespace tilemap_system
         {
             _position += _direction * travelDistance;
         }
+        public void reverse(int travelDistance)
+        {
+            _position -= _direction * travelDistance;
+        }
         public float DistanceTraveled { get => Vector3.Distance(_origin, _position); set; }
     }
 }

@@ -12,7 +12,9 @@ namespace tilemap_system
     internal class Player
     {
         static Texture2D _texture;
-        static int size = 30;
+        static int sizeX = 30;
+        static int sizeY = 100;
+        static int sizeZ = 30;
         Vector3 _position = new();
         Vector3 _speed = new();
         public Vector2 _angle = Vector2.Zero;
@@ -48,7 +50,7 @@ namespace tilemap_system
         {
             if (_speed.X > 0)
             {
-                _position.X = Cube.X - size - .1f;
+                _position.X = Cube.X - sizeX - .1f;
                 _speed.X = 0;
             }
             else if (_speed.X < 0)
@@ -62,7 +64,7 @@ namespace tilemap_system
             if (_speed.Y > 0)
             {
                 _speed.Y = 0;
-                _position.Y = Cube.Y - size - .1f;
+                _position.Y = Cube.Y - sizeY - .1f;
             }
             else if (_speed.Y < 0)
             {
@@ -75,7 +77,7 @@ namespace tilemap_system
             if (_speed.Z > 0)
             {
                 _speed.Z = 0;
-                _position.Z = Cube.Z - size - 1f;
+                _position.Z = Cube.Z - sizeZ - 1f;
             }
             else if (_speed.Z < 0)
             {
@@ -85,11 +87,11 @@ namespace tilemap_system
         }
         public void update(KeyboardState keyboardState, KeyboardState PreviouskeyboardState)
         {
-            //_speed.Y += .4f;
+            _speed.Y += .35f;
 
             Vector2 normalizedSpeed = new();
-            if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Jump)) { _speed.Y -= 1; }
-            if (keyboardState.IsKeyDown((Keys)Game1.Keybind.sneak)) { _speed.Y += 1; }
+            //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Jump)) { _speed.Y -= 1; }
+            //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.sneak)) { _speed.Y += 1; }
             //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.up)) { normalizedSpeed.Y -= 1; }
             //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.down)) { normalizedSpeed.Y += 1; }
             //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Left)) { normalizedSpeed.X -= 1; }
@@ -102,7 +104,7 @@ namespace tilemap_system
 
 
             _speed.X *= .75f;
-            _speed.Y *= .75f;
+            _speed.Y *= .95f;
             _speed.Z *= .75f;
         }
         public void jump()
@@ -152,8 +154,8 @@ namespace tilemap_system
         public Vector2 XY { get => new(_position.X, _position.Y); set; }
         public Vector3 Speed { get => _speed; set; }
         public Vector3 Position { get => _position; set; }
-        public Rectangle Rectangle { get => new((int)_position.X, (int)_position.Y, size, size); set; }
-        public Cube Cube { get => new(_position, size, size, size); set; } // working here
+        public Rectangle Rectangle { get => new((int)_position.X, (int)_position.Y, sizeX, sizeY); set; }
+        public Cube Cube { get => new(_position, sizeX, sizeY, sizeZ); set; } // working here
 
 
     }
