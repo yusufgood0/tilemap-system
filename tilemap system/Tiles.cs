@@ -25,19 +25,19 @@ namespace tilemap_system
         public enum ID
         {
             Empty = 0,
-            Full = 1,
-            Grass = 2
+            Grass = 1,
+            Stone = 2,
         }
-
+        
         public Tiles(int X, int Y, int Z, ID type)
         {
             _type = type;
             _collideCube.X = X * xSize;
             _collideCube.Y = Y * ySize;
             _collideCube.Z = Z * zSize;
-            updateTexture();
+            UpdateTexture();
         }
-
+        
         public static void SetTexture(Texture2D texture)
         {
             _texture = texture;
@@ -47,8 +47,8 @@ namespace tilemap_system
             spriteBatch.Begin();
             spriteBatch.Draw(_texture,
                     new Rectangle(
-                        (int)_collideCube.X + (int)offset.X,
-                        (int)_collideCube.Y + (int)offset.Y,
+                        _collideCube.X + (int)offset.X,
+                        _collideCube.Y + (int)offset.Y,
                         _collideCube.XSize,
                         _collideCube.YSize),
                     null,
@@ -60,7 +60,7 @@ namespace tilemap_system
                     0
                     );
             spriteBatch.End();
-        }
+        }// Draws the tile on the screen with the given offset
         public static IntTriple getTileIndex(Vector3 position)
         {
             int x = (int)(position.X / xSize);
@@ -95,7 +95,6 @@ namespace tilemap_system
             IntTriple point1 = getTileIndex(new Vector3(cube.X, cube.Y, cube.Z));
             IntTriple point2 = getTileIndex(new Vector3(cube.X_OP, cube.Y_OP, cube.Z_OP));
 
-
             for (int x = point1.X; x < point2.X + 1; x++)
                 for (int y = point1.Y; y < point2.Y + 1; y++)
                     for (int z = point1.Z; z < point2.Z + 1; z++)
@@ -128,26 +127,27 @@ namespace tilemap_system
 
             return tiles;
         }
-        void updateTexture()
+        public void UpdateTexture()
         {
+            int value = (int)((float)_health / maxHealth * 255);
             switch (_type)
             {
-                case ID.Full:
-                    int value = (int)((float)_health / maxHealth * 255);
-                    _color = new(value, value, 0);
-                    break;
                 case ID.Empty:
                     _color = new(125, 125, 125);
                     break;
+                case ID.Stone:
+                    _color = new(value, value, 0);
+                    break;
                 case ID.Grass:
-                    _color = Color.Green;
+                    _color = new(0, value/2, 0);
                     break;
             }
         }
-        public void Update()
+        
+        public void Heal()
         {
-            updateTexture();
             _health = maxHealth;
+            UpdateTexture();
         }
         public void MineTile(int damage)
         {
@@ -158,7 +158,10 @@ namespace tilemap_system
                 _type = ID.Empty;
             }
         }
-
+        public void setType(ID type)
+        {
+            _type = type;
+        }
         public Cube Cube { get => _collideCube; set; }
         public int X { get => _collideCube.X; set; }
         public int Y { get => _collideCube.Y; set; }

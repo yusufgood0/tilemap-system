@@ -23,18 +23,34 @@ namespace tilemap_system
         public Vector3 Z_direction;
 
         public Color _color { get; set; }
-        public DDA_ray(Vector2 angle, Vector3 position)
+        public DDA_ray(Vector3 position, Vector3 pos2)
         {
             _origin = position;
             _position = position;
             Xpos = _position;
             Ypos = _position;
             Zpos = _position;
-            _direction = General.Normalize(new Vector3(
+            _direction = General.Normalize(pos2 - position, 1);
+            X_direction = new Vector3(1, _direction.Y / _direction.X, _direction.Z / _direction.X);
+            if (_direction.X < 0) X_direction *= -1;
+            Y_direction = new Vector3(_direction.X / _direction.Y, 1, _direction.Z / _direction.Y);
+            if (_direction.Y < 0) Y_direction *= -1;
+            Z_direction = new Vector3(_direction.X / _direction.Z, _direction.Y / _direction.Z, 1);
+            if (_direction.Z < 0) Z_direction *= -1;
+            FirstMove();
+        }
+        public DDA_ray(Vector3 position, Vector2 angle)
+        {
+            _origin = position;
+            _position = position;
+            Xpos = _position;
+            Ypos = _position;
+            Zpos = _position;
+            _direction = new Vector3(
             (float)(Math.Cos(angle.Y) * Math.Sin(angle.X)),
             (float)(Math.Sin(angle.Y)),
             (float)(Math.Cos(angle.Y) * Math.Cos(angle.X))
-                ), 1);
+                );
             X_direction = new Vector3(1, _direction.Y / _direction.X, _direction.Z / _direction.X);
             if (_direction.X < 0) X_direction *= -1;
             Y_direction = new Vector3(_direction.X / _direction.Y, 1, _direction.Z / _direction.Y);

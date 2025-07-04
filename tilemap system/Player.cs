@@ -6,18 +6,24 @@ using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-
 namespace tilemap_system
 {
     internal class Player
     {
         static Texture2D _texture;
         static int sizeX = 30;
-        static int sizeY = 100;
+        static int sizeY = 70;
         static int sizeZ = 30;
         Vector3 _position = new();
         Vector3 _speed = new();
         public Vector2 _angle = Vector2.Zero;
+
+        public enum GameMode
+        {
+            Survival,
+            Creative
+        }
+        GameMode gameMode = GameMode.Survival;
 
         public Player(Vector3 position)
         {
@@ -34,8 +40,8 @@ namespace tilemap_system
         public void Draw(SpriteBatch spriteBatch, Vector2 OFFSET)
         {
             spriteBatch.Begin();
-            spriteBatch.Draw(_texture, 
-                new Rectangle(Rectangle.X + (int)OFFSET.X, Rectangle.Y + (int)OFFSET.Y, Rectangle.Width, Rectangle.Height), 
+            spriteBatch.Draw(_texture,
+                new Rectangle(Rectangle.X + (int)OFFSET.X, Rectangle.Y + (int)OFFSET.Y, Rectangle.Width, Rectangle.Height),
                 null,
                 Color.Red,
                 0,
@@ -81,14 +87,16 @@ namespace tilemap_system
             }
             else if (_speed.Z < 0)
             {
-                _position.Z = Cube.Z_OP + 1f;
+                _position.Z = Cube.Z_OP + .1f;
                 _speed.Z = 0;
             }
         }
         public void update(KeyboardState keyboardState, KeyboardState PreviouskeyboardState)
         {
-            _speed.Y += .35f;
-
+            if (isSurvival)
+            {
+                _speed.Y += 0.5f;
+            }
             Vector2 normalizedSpeed = new();
             //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Jump)) { _speed.Y -= 1; }
             //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.sneak)) { _speed.Y += 1; }
@@ -102,10 +110,10 @@ namespace tilemap_system
             _speed.X += normalizedSpeed.X;
             _speed.Z += normalizedSpeed.Y;
 
-
             _speed.X *= .75f;
             _speed.Y *= .95f;
             _speed.Z *= .75f;
+
         }
         public void jump()
         {
@@ -117,20 +125,23 @@ namespace tilemap_system
         }
         enum Direction
         {
-            UP = Keys.W,
-            DOWN = Keys.S,
+            FORWARD = Keys.W,
+            BACKWARDS = Keys.S,
             LEFT = Keys.A,
-            RIGHT = Keys.D
+            RIGHT = Keys.D,
+            UP = Keys.Space,
+            DOWN = Keys.LeftShift
+
         }
         public void MoveKeyPressed(KeyboardState keyboardState)
         {
             Vector2 speedChange = new();
 
-            if (keyboardState.IsKeyDown((Keys)Direction.UP))
+            if (keyboardState.IsKeyDown((Keys)Direction.FORWARD))
             {
                 speedChange += General.AngleToVector2(_angle.X);
             }
-            if (keyboardState.IsKeyDown((Keys)Direction.DOWN))
+            if (keyboardState.IsKeyDown((Keys)Direction.BACKWARDS))
             {
                 speedChange -= General.AngleToVector2(_angle.X);
             }
@@ -142,15 +153,27 @@ namespace tilemap_system
             {
                 speedChange += General.AngleToVector2(_angle.X + (float)Math.PI / 2);
             }
+            if (isCreative)
+            {
+                if (keyboardState.IsKeyDown((Keys)Direction.DOWN))
+                {
+                    _speed.Y += 1;
+                }
+                if (keyboardState.IsKeyDown((Keys)Direction.UP))
+                {
+                    _speed.Y -= 1;
+                }
+            }
 
             if (speedChange != new Vector2(0, 0))
             {
                 speedChange.Normalize();
                 _speed.X += speedChange.X * 1;
                 _speed.Z += speedChange.Y * 1;
-
             }
         }
+        public bool isSurvival { get => gameMode == GameMode.Survival; set; }
+        public bool isCreative { get => gameMode == GameMode.Creative; set; }
         public Vector2 XY { get => new(_position.X, _position.Y); set; }
         public Vector3 Speed { get => _speed; set; }
         public Vector3 Position { get => _position; set; }

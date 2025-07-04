@@ -6,12 +6,59 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Text;
 using System.Threading.Tasks;
+using System.Reflection.Metadata;
 
 namespace tilemap_system
 {
     internal class General
     {
-        public static bool OnPress(MouseState mouseState, MouseState previousMouseState)
+        public static float Bound(float value, float maxValue) //handles overflows of a value by setting it back to zero, and zero to the maxvalue
+        {
+            return (value % maxValue + maxValue) % maxValue;
+        }
+        public static int Bound(int value, int maxValue) //handles overflows of a value by setting it back to zero, and zero to the maxvalue
+        {
+            return (value % maxValue + maxValue) % maxValue;
+        }
+        public static float ToRadians(float degrees)
+        {
+            return degrees * (MathF.PI / 180f);
+        }
+        
+        public static Vector3 rotate(Vector3 Vector, float yaw, float pitch)
+        {
+            // Yaw: rotate around Y-axis
+            float cosYaw = (float)Math.Cos(yaw);
+            float sinYaw = (float)Math.Sin(yaw);
+            float x1 = Vector.X * cosYaw + Vector.Z * sinYaw;
+            float z1 = -Vector.X * sinYaw + Vector.Z * cosYaw;
+
+            // Pitch: rotate around X-axis
+            float cosPitch = (float)Math.Cos(pitch);
+            float sinPitch = (float)Math.Sin(pitch);
+            float y1 = Vector.Y * cosPitch - z1 * sinPitch;
+            float z2 = Vector.Y * sinPitch + z1 * cosPitch;
+
+            Vector.X = x1;
+            Vector.Y = y1;
+            Vector.Z = z2;
+
+            return Vector;
+        }
+        public static Vector3 angleToVector3(Vector2 angle)
+        {
+            return 
+            General.Normalize(new Vector3(
+            (float)(Math.Cos(angle.Y) * Math.Sin(angle.X)),
+            (float)(Math.Sin(angle.Y)),
+            (float)(Math.Cos(angle.Y) * Math.Cos(angle.X))
+            ), 1);
+        }
+        public static bool OnRightPress(MouseState mouseState, MouseState previousMouseState)
+        {
+            return (mouseState.RightButton == ButtonState.Pressed && previousMouseState.RightButton == ButtonState.Released);
+        }
+        public static bool OnLeftPress(MouseState mouseState, MouseState previousMouseState)
         {
             return (mouseState.LeftButton == ButtonState.Pressed && previousMouseState.LeftButton == ButtonState.Released);
         }
@@ -46,10 +93,11 @@ namespace tilemap_system
 
             return vector;
         }
-        public static IntTriple clamp(IntTriple Triple, IntTriple min, IntTriple max)
+        
+        public static IntTriple Clamp(IntTriple Triple, IntTriple min, IntTriple max)
         {
             return new IntTriple(
-                Math.Clamp(Triple.X, min.X, max.X-1),
+                Math.Clamp(Triple.X, min.X, max.X - 1),
                 Math.Clamp(Triple.Y, min.Y, max.Y - 1),
                 Math.Clamp(Triple.Z, min.Z, max.Z - 1)
                 );

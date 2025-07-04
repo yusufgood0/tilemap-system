@@ -20,6 +20,34 @@ namespace tilemap_system
             Y = 0;
             Z = 0;
         }
+        public static IntTriple operator +(IntTriple a, IntTriple b)
+        {
+            return new IntTriple(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
+        }
+        public static IntTriple operator -(IntTriple a)
+        {
+            return new IntTriple(-a.X, -a.Y, -a.Z);
+        }
+        public static IntTriple operator -(IntTriple a, IntTriple b)
+        {
+            return new IntTriple(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
+        }
+        public static IntTriple operator *(IntTriple a, int b)
+        {
+            return new IntTriple(a.X * b, a.Y * b, a.Z * b);
+        }
+        public bool inBound(IntTriple min, IntTriple max)
+        {
+            if (
+                min.X < X && X < max.X &&
+                min.Y < Y && Y < max.Y &&
+                min.Z < Z && Z < max.Z
+                )
+            {
+                return true;
+            }
+            return false;
+        }
 
         public IntTriple(int a, int b, int c)
         {
