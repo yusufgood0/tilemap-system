@@ -9,7 +9,7 @@ namespace tilemap_system
 {
     internal struct Item
     {
-        public static Item[] _items;
+        public static Item[] _items; //this array is used to store all items in the game, like a dictionary
 
         string _name;
         Texture2D _textures;

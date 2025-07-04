@@ -17,7 +17,7 @@ namespace tilemap_system
         private SpriteBatch _spriteBatch;
         KeyboardState _keyboardState, _PreviouskeyboardState;
         MouseState _mouseState, _previousMouseState;
-        public static Random _random = new Random();
+        public readonly Random _random = new Random();
         public static SpriteFont _font;
 
         private readonly IntTriple loadDistance = new(200, 200, 200);
@@ -29,20 +29,20 @@ namespace tilemap_system
         float sensitivity = .01f;
 
         /* draw */
-        static int fps = 30;
+        const int fps = 30;
         static Timer drawTimer = new Timer(1000 / fps); // in milliseconds
 
         int pixelWidth;
         int pixelHeight;
         static Texture2D crosshair;
         static Vector2 crosshairDrawPos;
-        static float crosshairScale = 0.1f;
+        const float crosshairScale = 0.1f;
         static Vector2 offset;
         static Vector2 screenSize;
         static List<DDA_ray> drawRays = new List<DDA_ray>();
         static Vector2 FOV = new(2, 2);
-        static Point resolution = new(100, 100);
-        static float cameraHeight = 60;
+        static readonly Point resolution = new(100, 100);
+        const float cameraHeight = 60;
         Vector3 eyePosition;
 
         /* Inventory */
@@ -50,7 +50,7 @@ namespace tilemap_system
 
         int selectedItem;
         storageInfo hotbar;
-        int hotbarSize = 80;
+        const int hotbarSize = 80;
         Rectangle[] hotbarRects;
         Point hotbarPosition;
 
@@ -88,15 +88,7 @@ namespace tilemap_system
             Inventory
         }
 
-        // show menu bools
-        bool softPaused = false;
-        bool inventoryOpen = false;
-
         static readonly Rectangle sensitivitySliderRect = new((int)(Game1.screenSize.X * .1f), (int)(Game1.screenSize.Y * .4f), (int)(Game1.screenSize.X * .3f), (int)(Game1.screenSize.Y * .05f));
-        //Vector2 sensitivityRange = new(0, 1);
-        //static readonly Rectangle FOVSliderRect = ;
-        //Vector2 FOVRange = new(0, 3);
-        //static readonly Rectangle detailSliderRect = new ((int)(Game1.screenSize.X* .6f), (int) (Game1.screenSize.Y* .6f), (int) (Game1.screenSize.X* .3f), (int) (Game1.screenSize.Y* .05f));
 
         public Game1()
         {
@@ -200,7 +192,6 @@ namespace tilemap_system
                 }
             }
 
-
             menuSliders[0] = new Slider(square,
             new((int)(Game1.screenSize.X * .6f), (int)(Game1.screenSize.Y * .4f), (int)(Game1.screenSize.X * .3f), (int)(Game1.screenSize.Y * .05f)),
             0f,
@@ -240,15 +231,15 @@ namespace tilemap_system
 
             if (General.OnPress(_keyboardState, _PreviouskeyboardState, (Keys)Keybind.inventory))
             {
-                inventoryOpen = !inventoryOpen;
-                IsMouseVisible = inventoryOpen;
-                if (inventoryOpen)
+                if (gameState == GameState.Playing)
                 {
                     gameState = GameState.Inventory;
+                    IsMouseVisible = true;
                 }
                 else
                 {
                     gameState = GameState.Playing;
+                    IsMouseVisible = false;
                 }
             }
             if (General.OnPress(_keyboardState, _PreviouskeyboardState, (Keys)Keybind.pause))
@@ -257,13 +248,11 @@ namespace tilemap_system
                 {
                     case GameState.Paused:
                         gameState = GameState.Playing;
-                        softPaused = false;
                         IsMouseVisible = false;
 
                         break;
                     default:
                         gameState = GameState.Paused;
-                        softPaused = true;
                         IsMouseVisible = true;
                         break;
                 }
@@ -332,7 +321,7 @@ namespace tilemap_system
 
             if (gameState == GameState.Inventory)
             {
-                if (General.OnLeftPress(_mouseState, _previousMouseState) && inventoryOpen)
+                if (General.OnLeftPress(_mouseState, _previousMouseState) && gameState == GameState.Inventory)
                 {
                     for (int i = 0; i < inventoryRects.Length; i++)
                     {
@@ -481,6 +470,7 @@ namespace tilemap_system
                     }
                 }
 
+                //draws tiles from previous raycasting
                 int rayIndex = 0;
                 _spriteBatch.Begin();
                 for (int x = 0; x < resolution.X; x++)
@@ -505,13 +495,18 @@ namespace tilemap_system
                         rayIndex += 1;
                     }
                 }
+
+                //draws crosshair
                 _spriteBatch.Draw(crosshair, crosshairDrawPos, null, Color.White, 0, new Vector2(), crosshairScale, 0, 1);
 
+                //draws debug
                 _spriteBatch.DrawString(_font, Tiles.getTileIndex(_player.Position).X.ToString(), new(), Color.White);
                 _spriteBatch.DrawString(_font, Tiles.getTileIndex(_player.Position).Y.ToString(), new(0, _font.LineSpacing), Color.White);
                 _spriteBatch.DrawString(_font, Tiles.getTileIndex(_player.Position).Z.ToString(), new(0, _font.LineSpacing + _font.LineSpacing), Color.White);
                 _spriteBatch.DrawString(_font, _player._angle.X.ToString(), new(0, _font.LineSpacing * 3), Color.White);
                 _spriteBatch.Draw(hotbar.GetItemTexture(selectedItem), new Rectangle((int)screenSize.X, (int)screenSize.Y - helditemSize / 4, helditemSize, helditemSize), null, Color.White, (float)Math.Tau * 0.95f, new(helditemSize / 2, helditemSize / 2), SpriteEffects.None, 1);
+                
+                //draws hotbar
                 for (int index = 0; index < hotbar.Count; index++)
                 {
                     Color color = Color.Gray;
@@ -527,6 +522,8 @@ namespace tilemap_system
                     }
 
                 }
+
+                //draws inventory
                 if (GameState.Inventory == gameState)
                 {
                     int index = 0;
@@ -555,11 +552,14 @@ namespace tilemap_system
                         _spriteBatch.Draw(mouseHeldItem.GetItemTexture(0), new(_mouseState.X - hotbarSize / 2, _mouseState.Y - hotbarSize / 2, hotbarSize, hotbarSize), null, Color.White, 0, new(), 0, 1);
 
                 }
+
+                //draws pause menu
                 if (GameState.Paused == gameState)
                 {
                     _spriteBatch.Draw(square, new Rectangle(0, 0, (int)screenSize.X, (int)screenSize.Y), null, new Color(128, 128, 128, 128), 0, new(), 0, 1);
                     menuSliders[0].SliderDraw(_spriteBatch, FOV.X);
                 }
+
                 _spriteBatch.End();
 
                 base.Draw(gameTime);

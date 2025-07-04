@@ -98,12 +98,6 @@ namespace tilemap_system
                 _speed.Y += 0.5f;
             }
             Vector2 normalizedSpeed = new();
-            //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Jump)) { _speed.Y -= 1; }
-            //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.sneak)) { _speed.Y += 1; }
-            //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.up)) { normalizedSpeed.Y -= 1; }
-            //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.down)) { normalizedSpeed.Y += 1; }
-            //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Left)) { normalizedSpeed.X -= 1; }
-            //if (keyboardState.IsKeyDown((Keys)Game1.Keybind.Right)) { normalizedSpeed.X += 1; }
             MoveKeyPressed(keyboardState);
             normalizedSpeed = General.Normalize(normalizedSpeed, 1f);
 
