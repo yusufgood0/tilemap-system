@@ -12,9 +12,9 @@ namespace tilemap_system
 {
     internal class General
     {
-        public static float Bound(float value, float maxValue) //handles overflows of a value by setting it back to zero, and zero to the maxvalue
+        public static void Bound(ref float value, float maxValue) //handles overflows of a value by setting it back to zero, and zero to the maxvalue
         {
-            return (value % maxValue + maxValue) % maxValue;
+            value = (value % maxValue + maxValue) % maxValue;
         }
         public static int Bound(int value, int maxValue) //handles overflows of a value by setting it back to zero, and zero to the maxvalue
         {

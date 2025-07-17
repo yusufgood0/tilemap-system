@@ -62,15 +62,15 @@ namespace tilemap_system
 
         public void FirstMove()
         {
-            if (_direction.X < 0) Xpos += X_direction *                (Xpos.X % Tiles.XSize)   + _direction;
-            else                  Xpos += X_direction * (Tiles.XSize - (Xpos.X % Tiles.XSize))  + _direction;
-            if (_direction.Y < 0) Ypos += Y_direction *                (Ypos.Y % Tiles.YSize)   + _direction;
-            else                  Ypos += Y_direction * (Tiles.YSize - (Ypos.Y % Tiles.YSize))  + _direction;
-            if (_direction.Z < 0) Zpos += Z_direction *                (Zpos.Z % Tiles.ZSize)   + _direction;
-            else                  Zpos += Z_direction * (Tiles.ZSize - (Zpos.Z % Tiles.ZSize))  + _direction;
-            X_direction *= Tiles.XSize;
-            Y_direction *= Tiles.YSize;
-            Z_direction *= Tiles.ZSize;
+            if (_direction.X < 0) Xpos += X_direction *                (Xpos.X % Tile.XSize)   + _direction;
+            else                  Xpos += X_direction * (Tile.XSize - (Xpos.X % Tile.XSize))  + _direction;
+            if (_direction.Y < 0) Ypos += Y_direction *                (Ypos.Y % Tile.YSize)   + _direction;
+            else                  Ypos += Y_direction * (Tile.YSize - (Ypos.Y % Tile.YSize))  + _direction;
+            if (_direction.Z < 0) Zpos += Z_direction *                (Zpos.Z % Tile.ZSize)   + _direction;
+            else                  Zpos += Z_direction * (Tile.ZSize - (Zpos.Z % Tile.ZSize))  + _direction;
+            X_direction *= Tile.XSize;
+            Y_direction *= Tile.YSize;
+            Z_direction *= Tile.ZSize;
         }
         public Vector3 Update()
         {

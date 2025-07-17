@@ -20,6 +20,7 @@ namespace tilemap_system
             Y = 0;
             Z = 0;
         }
+
         public static IntTriple operator +(IntTriple a, IntTriple b)
         {
             return new IntTriple(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
@@ -35,6 +36,14 @@ namespace tilemap_system
         public static IntTriple operator *(IntTriple a, int b)
         {
             return new IntTriple(a.X * b, a.Y * b, a.Z * b);
+        }
+        public static IntTriple operator %(IntTriple a, int b)
+        {
+            return new IntTriple(a.X % b, a.Y % b, a.Z % b);
+        }
+        public static IntTriple operator /(IntTriple a, int b)
+        {
+            return new IntTriple(a.X / b, a.Y / b, a.Z / b);
         }
         public bool inBound(IntTriple min, IntTriple max)
         {

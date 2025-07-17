@@ -21,11 +21,15 @@ namespace tilemap_system
             startTime = DateTime.Now;
             elapsedTime = TimeSpan.Zero;
         }
-        public int getTime()
+        public int getTimeMilliseconds()
         {
             return (int)(DateTime.Now - startTime).TotalMilliseconds;
         }
-        public bool IsActive { get => getTime() > activationTime; }
+        public float getTimeSeconds()
+        {
+            return (float)(DateTime.Now - startTime).TotalSeconds;
+        }
+        public bool IsActive { get => getTimeMilliseconds() > activationTime; }
         public TimeSpan Elapsed
         {
             get
