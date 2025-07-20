@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -20,7 +21,9 @@ namespace tilemap_system
 
         // for I/O operations
         //private static readonly string _archiveDirectory = Environment.CurrentDirectory;
-        private static readonly string _archiveDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        private static readonly string _archiveDirectory = Path.Combine(Environment.CurrentDirectory, "HomemadeMinecraft", "ChunkArchive");
+        static readonly string tempPath = Path.Combine(_archiveDirectory, "tempChunk", "tempFile");
+
         //private static readonly StringBuilder _cachedStringBuilder = new StringBuilder(_chunkSize * _chunkHeight * _chunkSize * 2);
 
 
@@ -44,7 +47,38 @@ namespace tilemap_system
                         data[i++] = (byte)_Tiles[x, y, z].getType;
                     }
             string filePath = Path.Combine(_archiveDirectory, $"C{_chunkIndex.X}_{_chunkIndex.Z}");
+
+            if (File.Exists(filePath))
+            {
+                File.SetAttributes(filePath, FileAttributes.Temporary);
+            }
+
             File.WriteAllBytes(filePath, data);
+            File.SetAttributes(filePath, FileAttributes.Normal);
+
+
+            //using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            //{
+            //    fs.Write(data, 0, data.Length);
+            //}
+
+            //try
+            //{
+            // 1. Write to temp file first
+            //File.WriteAllBytes(tempPath, data);
+
+            // 2. Atomic replace (overwrites if exists)
+            //File.Replace(
+            //    sourceFileName: tempPath,
+            //    destinationFileName: filePath,
+            //    destinationBackupFileName: null); // Set backup path if needed
+            //}
+            //finally
+            //{
+            //    if (File.Exists(tempPath))
+            //        File.Delete(tempPath); // Cleanup
+            //}
+             
         }
         public static bool PullChunkFromArchive(IntDouble chunkIndex, out Chunk outputChunk)
         {
@@ -52,7 +86,10 @@ namespace tilemap_system
 
             string filePath = Path.Combine(_archiveDirectory, $"C{chunkIndex.X}_{chunkIndex.Z}");
             if (!File.Exists(filePath))
+            {
+                Debug.WriteLine($"Chunk file C{chunkIndex.X}_{chunkIndex.Z} does not exist in archive.");
                 return false; // Chunk does not exist in archive. Pull failed
+            }
             byte[] data = File.ReadAllBytes(filePath);
 
             int i = 0;

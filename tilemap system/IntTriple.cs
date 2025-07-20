@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace tilemap_system
 {
-    internal class IntTriple
+    internal struct IntTriple
     {
         public int X { get; set; }
         public int Y { get; set; }
@@ -72,6 +72,6 @@ namespace tilemap_system
         }
 
         public Vector2 XY { get => new(X, Y); set; }
-        public Vector3 XYZ { get => new(X, Y, Z); set; }
+        public (int, int, int) XYZ { get => new(X, Y, Z); set; }
     }
 }

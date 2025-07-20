@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -13,9 +14,8 @@ namespace tilemap_system
     {
         internal class World
         {
-            private static int renderDistance = 16;
+            private static int renderDistance = 8;
 
-            private static Dictionary<IntDouble, Chunk> _chunks = new Dictionary<IntDouble, Chunk>();
 
             private static readonly int _loadedChunksSize = renderDistance * 2 + 1;
             private static Chunk?[,] _LoadedChunks = new Chunk[_loadedChunksSize, _loadedChunksSize];
@@ -31,6 +31,20 @@ namespace tilemap_system
             private static IntDouble[] indicesToAdd = new IntDouble[_loadedChunksSize];
             static Chunk[] bufferChunksToArchive = new Chunk[_loadedChunksSize];
             static IntDouble[] bufferIndecesToLoad = new IntDouble[_loadedChunksSize];
+            public static void SaveLoadedChunks()
+            {
+                lock (_LoadedChunks)
+                {
+                    foreach (Chunk chunk in _LoadedChunks)
+                    {
+                        if (chunk != null)
+                        {
+                            chunk.ArchiveChunk();
+                        }
+                    }
+                }
+                Debug.WriteLine(DateTime.Now.ToString() + ": Saved all chunks to archive");
+            }
             public static void DrawDebug(SpriteBatch spriteBatch)
             {
                 lock (_loadedChunkCenterlock)
@@ -77,13 +91,17 @@ namespace tilemap_system
                     for (int yIndex = 0; yIndex < _loadedChunksSize; yIndex++)
                     {
                         bufferChunksToArchive[yIndex] = _LoadedChunks[0, yIndex];
-
-                        //Array.Copy(_LoadedChunks, yIndex * _loadedChunksSize + 1, _LoadedChunks, yIndex * _loadedChunksSize, lastIndex);
-                        for (int xIndex = 0; xIndex < lastIndex; xIndex++)
+                    }
+                    //Array.Copy(_LoadedChunks, yIndex * _loadedChunksSize + 1, _LoadedChunks, yIndex * _loadedChunksSize, lastIndex);
+                    for (int xIndex = 0; xIndex < lastIndex; xIndex++)
+                    {
+                        for (int yIndex = 0; yIndex < _loadedChunksSize; yIndex++)
                         {
                             _LoadedChunks[xIndex, yIndex] = _LoadedChunks[xIndex + 1, yIndex];
                         }
-
+                    }
+                    for (int yIndex = 0; yIndex < _loadedChunksSize; yIndex++)
+                    {
                         _LoadedChunks[lastIndex, yIndex] = null;
                         bufferIndecesToLoad[yIndex] = new IntDouble(lastIndex, yIndex);
                     }
@@ -109,20 +127,16 @@ namespace tilemap_system
                     for (int yIndex = 0; yIndex < _loadedChunksSize; yIndex++)
                     {
                         bufferChunksToArchive[yIndex] = _LoadedChunks[lastIndex, yIndex];
-
-                        //Array.Copy(_LoadedChunks, yIndex * _loadedChunksSize, _LoadedChunks, yIndex * _loadedChunksSize + 1, lastIndex);
-                        //Array.Copy(
-                        //    sourceArray: _LoadedChunks,
-                        //    sourceIndex: yIndex * _loadedChunksSize,        // Start of row
-                        //    destinationArray: _LoadedChunks,
-                        //    destinationIndex: yIndex * _loadedChunksSize + 1, // Shift right by 1
-                        //    length: lastIndex                          // Copy all but last element
-                        //);
-                        for (int xIndex = lastIndex; xIndex > 1; xIndex--)
+                    }
+                    for (int xIndex = lastIndex; xIndex > 1; xIndex--)
+                    {
+                        for (int yIndex = 0; yIndex < _loadedChunksSize; yIndex++)
                         {
                             _LoadedChunks[xIndex, yIndex] = _LoadedChunks[xIndex - 1, yIndex];
                         }
-
+                    }
+                    for (int yIndex = 0; yIndex < _loadedChunksSize; yIndex++)
+                    {
                         _LoadedChunks[0, yIndex] = null;
                         bufferIndecesToLoad[yIndex] = new IntDouble(0, yIndex);
                     }
@@ -234,6 +248,7 @@ namespace tilemap_system
                 ShiftChunks(FocusPosition);
                 General.IntDoubleArrayVisualizer.VisualizeToFile(_LoadedChunks);
                 Chunk?[,] loadedChunks;
+                int chunksLoadedFromArchive = 0;
                 lock (_LoadedChunks)
                 {
                     loadedChunks = _LoadedChunks;
@@ -245,7 +260,11 @@ namespace tilemap_system
                         if (loadedChunks[chunkIndex.X, chunkIndex.Z] == null)
                         {
                             IntDouble worldIndex = ChunksIndexToWorldIndex(chunkIndex);
-                            if (!Chunk.PullChunkFromArchive(worldIndex, out loadedChunks[chunkIndex.X, chunkIndex.Z]))
+                            if (Chunk.PullChunkFromArchive(worldIndex, out loadedChunks[chunkIndex.X, chunkIndex.Z]))
+                            {
+                                chunksLoadedFromArchive++;
+                            }
+                            else
                             {
                                 loadedChunks[chunkIndex.X, chunkIndex.Z] = new Chunk(worldIndex);
                             }
@@ -257,12 +276,24 @@ namespace tilemap_system
                 {
                     _LoadedChunks = loadedChunks;
                 }
-                List<Chunk> chunksToArchive;
+                List<Chunk> chunksToArchive = new List<Chunk>();
                 lock (_ChunksToArchive)
                 {
-                    chunksToArchive = _ChunksToArchive;
+                    foreach (Chunk chunk in _ChunksToArchive)
+                    {
+                        chunksToArchive.Add(chunk);
+                    }
                     _ChunksToArchive.Clear();
                 }
+                if (chunksToArchive.Count > 0)
+                {
+                    Debug.WriteLine(DateTime.Now.ToString() + $": Archiving {chunksToArchive.Count} chunks");
+                }
+                if (chunksLoadedFromArchive > 0)
+                {
+                    Debug.WriteLine(DateTime.Now.ToString() + $": Loaded {chunksLoadedFromArchive} chunks from archive");
+                }
+
                 foreach (Chunk chunk in chunksToArchive)
                 {
                     //if (chunk != null)
@@ -319,7 +350,7 @@ namespace tilemap_system
                 }
                 return outputChunk != null;
             }
-            public static IntDouble WorldIndexToLoadedChunksIndex(IntDouble worldIndex)
+            public static IntDouble WorldIndexToLoadedChunksArrayIndex(IntDouble worldIndex)
             {
                 lock (_loadedChunkCenterlock)
                 {
@@ -347,9 +378,11 @@ namespace tilemap_system
             */
             public static bool GetTileFromIndex(IntTriple trueTileIndex, out Tile outputTile)
             {
+                //if (trueTileIndex.Y > 256 || trueTileIndex.Y < 0) { outputTile = new Tile(); return false; } // bounds checking
+
                 // Convert tile index to chunk index (divide by chunk size)
                 IntDouble worldIndex = new IntDouble(trueTileIndex) / Chunk._chunkSize;
-                IntDouble ChunksIndex = WorldIndexToLoadedChunksIndex(worldIndex);
+                IntDouble ChunksIndex = WorldIndexToLoadedChunksArrayIndex(worldIndex);
                 if (GetChunkFromChunksIndex(ChunksIndex, out Chunk chunk))
                 {
                     outputTile = chunk.getTileFromWorldIndex(new IntTriple(
@@ -359,7 +392,7 @@ namespace tilemap_system
                         ));
                     return true; // succesfully taken tile
                 }
-                outputTile = new Tile(Tile.ID.Empty); // Return an empty tile if chunk retrieval fails
+                outputTile = new Tile(); // Return an empty tile if chunk retrieval fails
                 return false;
             }
             public static IntDouble GetChunkIndex(Vector3 worldPos)

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +19,7 @@ namespace tilemap_system
         Vector3 _position = new();
         Vector3 _speed = new();
         public Vector2 _angle = Vector2.Zero;
+        private static readonly string _saveDirectory = Path.Combine(Environment.CurrentDirectory, "HomemadeMinecraft", "PlayerInfo", "PlayerPos.txt");
 
         public enum GameMode
         {
@@ -28,10 +31,12 @@ namespace tilemap_system
         public Player(Vector3 position)
         {
             _position = position;
+            TryPullPositionFromArchive();
         }
         public Player(IntTriple position)
         {
             _position = new(position.X, position.Y, position.Z);
+            TryPullPositionFromArchive();
         }
         public static void SetTexture(Texture2D texture)
         {
@@ -164,6 +169,36 @@ namespace tilemap_system
                 speedChange.Normalize();
                 _speed.X += speedChange.X * 1;
                 _speed.Z += speedChange.Y * 1;
+            }
+        }
+        public void SavePosition()
+        {
+            if (!File.Exists(_saveDirectory))
+                Directory.CreateDirectory(_saveDirectory);
+            using (StreamWriter writer = new StreamWriter(_saveDirectory))
+            {
+                writer.WriteLine(_position.X.ToString());
+                writer.WriteLine(_position.Y.ToString());
+                writer.WriteLine(_position.Z.ToString());
+            }
+        }
+        void TryPullPositionFromArchive()
+        {
+            if (!File.Exists(_saveDirectory))
+            {
+                Debug.WriteLine($"Player position file {_saveDirectory} does not exist.");
+                return; // Chunk does not exist in archive. Pull failed
+            }
+            string[] PlayerPosition = File.ReadAllLines(_saveDirectory);
+            if (PlayerPosition.Length < 3)
+            {
+                Debug.WriteLine("Could not read PlayerFile");
+                return; // Not enough data to set position
+            }
+            if (float.TryParse(PlayerPosition[0], out float xPos) && float.TryParse(PlayerPosition[1], out float yPos) && float.TryParse(PlayerPosition[2], out float zPos))
+            {
+                _position = new Vector3(xPos, yPos, zPos);
+                Debug.WriteLine("Loaded Player position Successfully");
             }
         }
         public bool isSurvival { get => gameMode == GameMode.Survival; set; }

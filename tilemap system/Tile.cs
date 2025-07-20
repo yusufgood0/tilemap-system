@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
@@ -66,9 +67,9 @@ namespace tilemap_system
         */
         public static IntTriple getTileIndex(Vector3 worldPosition)
         {
-            int x = (int)Math.Floor(worldPosition.X / xSize);
-            int y = (int)Math.Floor(worldPosition.Y / ySize);
-            int z = (int)Math.Floor(worldPosition.Z / zSize);
+            int x = (int)(worldPosition.X / xSize);
+            int y = (int)(worldPosition.Y / ySize);
+            int z = (int)(worldPosition.Z / zSize);
             return new IntTriple(x, y, z);
         }
         public static IntTriple getTileIndex(IntTriple position)
@@ -80,13 +81,6 @@ namespace tilemap_system
                 );
         }
 
-        public static Tile getTile(Vector3 position, Tile[,,] _Tiles)
-        {
-            int x = (int)(position.X / xSize);
-            int y = (int)(position.Y / ySize);
-            int z = (int)(position.Z / zSize);
-            return _Tiles[x, y, z];
-        }
         public static bool IsCollision(Cube cube)
         {
             IntTriple index1 = getTileIndex(new Vector3(cube.X, cube.Y, cube.Z));
@@ -107,7 +101,7 @@ namespace tilemap_system
 
             return false;
         }
-        public static List<IntTriple> CollidingTiles(Cube cube)
+        public static List<IntTriple> CollidingTilesTriple(Cube cube)
         {
             List<IntTriple> Indeces = new List<IntTriple>();
 
@@ -120,9 +114,9 @@ namespace tilemap_system
                     {
                         Indeces.Add(new IntTriple(x, y, z));
                     }
-
             return Indeces;
         }
+        /*
         public static List<Tile> getLoaded(Vector3 focusPoint, IntTriple range, IntTriple TileArray, Tile[,,] _Tiles)
         {
             IntTriple CameraTileIndex = Tile.getTileIndex(focusPoint);
@@ -143,8 +137,8 @@ namespace tilemap_system
 
             return tiles;
         }
+        */
         //public void UpdateTexture() { }
-
         public void Heal()
         {
             _health = maxHealth;
