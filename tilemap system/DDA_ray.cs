@@ -25,6 +25,7 @@ namespace tilemap_system
         public Color _color { get; set; }
         public DDA_ray(Vector3 position, Vector3 pos2)
         {
+            _color = Color.Blue;
             _origin = position;
             _position = position;
             Xpos = _position;

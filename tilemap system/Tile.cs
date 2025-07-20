@@ -19,20 +19,22 @@ namespace tilemap_system
         static readonly int ySize = 40;
         static readonly int zSize = 40;
 
-        IntTriple _position = new();
+        //IntTriple _position = new();
         int _health = maxHealth;
         ID _type;
-        public enum ID
+        public enum ID : byte
         {
             Empty = 0,
             Grass = 1,
             Stone = 2,
         }
-
-        public Tile(int X, int Y, int Z, ID type)
+        public Tile()
+        {
+            _type = ID.Empty;
+        }
+        public Tile(ID type)
         {
             _type = type;
-            _position = new(X, Y, Z);
         }
         public ref Tile this[IntTriple index] { get => ref this[index.X, index.Y, index.Z]; }
         public ref Tile this[int z, int y, int x] => ref this[x, y, z];
@@ -41,6 +43,7 @@ namespace tilemap_system
         {
             _texture = texture;
         }
+        /* a relic of old code
         public void Draw(SpriteBatch spriteBatch, Vector2 offset)
         {
             spriteBatch.Begin();
@@ -60,11 +63,12 @@ namespace tilemap_system
                     );
             spriteBatch.End();
         }// Draws the tile on the screen with the given offset
-        public static IntTriple getTileIndex(Vector3 position)
+        */
+        public static IntTriple getTileIndex(Vector3 worldPosition)
         {
-            int x = (int)(position.X / xSize);
-            int y = (int)(position.Y / ySize);
-            int z = (int)(position.Z / zSize);
+            int x = (int)Math.Floor(worldPosition.X / xSize);
+            int y = (int)Math.Floor(worldPosition.Y / ySize);
+            int z = (int)Math.Floor(worldPosition.Z / zSize);
             return new IntTriple(x, y, z);
         }
         public static IntTriple getTileIndex(IntTriple position)
@@ -83,9 +87,29 @@ namespace tilemap_system
             int z = (int)(position.Z / zSize);
             return _Tiles[x, y, z];
         }
-        public static List<Tile> CollidingTiles(Cube cube)
+        public static bool IsCollision(Cube cube)
         {
-            List<Tile> tiles = new List<Tile>();
+            IntTriple index1 = getTileIndex(new Vector3(cube.X, cube.Y, cube.Z));
+            IntTriple index2 = getTileIndex(new Vector3(cube.X_OP, cube.Y_OP, cube.Z_OP));
+
+            for (int x = index1.X; x < index2.X + 1; x++)
+                for (int y = index1.Y; y < index2.Y + 1; y++)
+                    for (int z = index1.Z; z < index2.Z + 1; z++)
+                    {
+                        if (World.GetTileFromIndex(new(x, y, z), out Tile tile))
+                        {
+                            if (tile.Isfull)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+
+            return false;
+        }
+        public static List<IntTriple> CollidingTiles(Cube cube)
+        {
+            List<IntTriple> Indeces = new List<IntTriple>();
 
             IntTriple index1 = getTileIndex(new Vector3(cube.X, cube.Y, cube.Z));
             IntTriple index2 = getTileIndex(new Vector3(cube.X_OP, cube.Y_OP, cube.Z_OP));
@@ -93,10 +117,11 @@ namespace tilemap_system
             for (int x = index1.X; x < index2.X + 1; x++)
                 for (int y = index1.Y; y < index2.Y + 1; y++)
                     for (int z = index1.Z; z < index2.Z + 1; z++)
-                        tiles.Add(World.GetTileFromIndex(new(x, y, z)));
+                    {
+                        Indeces.Add(new IntTriple(x, y, z));
+                    }
 
-            return tiles;
-
+            return Indeces;
         }
         public static List<Tile> getLoaded(Vector3 focusPoint, IntTriple range, IntTriple TileArray, Tile[,,] _Tiles)
         {
@@ -137,11 +162,9 @@ namespace tilemap_system
         {
             _type = type;
         }
-        public Cube Cube { get => new(_position, XSize, YSize, ZSize); set; }
-        public IntTriple position { get => _position; }
-        public int X { get => _position.X; }
-        public int Y { get => _position.Y; }
-        public int Z { get => _position.Z; }
+        public static Cube GetCube(int Xindex, int Yindex, int Zindex) { return new Cube(GetPosition(Xindex, Yindex, Zindex), XSize, YSize, ZSize); }
+        public static Cube GetCube(IntTriple index) { return new Cube(GetPosition(index.X, index.Y, index.Z), XSize, YSize, ZSize); }
+        public static IntTriple GetPosition(int Xindex, int Yindex, int Zindex) { return new IntTriple(Xindex * XSize, Yindex * ySize, Zindex * zSize); }
         static public int XSize { get => xSize; }
         static public int YSize { get => ySize; }
         static public int ZSize { get => zSize; }

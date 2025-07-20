@@ -12,6 +12,8 @@ using System.Xml.Linq;
 using System.Linq;
 using System.Threading.Tasks;
 using tilemap_system.tilemap_system;
+using System.Threading;
+using System.Linq.Expressions;
 namespace tilemap_system
 {
     public class Game1 : Game
@@ -24,7 +26,7 @@ namespace tilemap_system
         public static SpriteFont _font;
 
         private readonly IntTriple loadDistance = new(200, 200, 200);
-        private readonly IntTriple renderDistance = new(1, 1, 1);
+        private static readonly IntTriple renderDistance = new(100, 100, 100);
         static readonly IntTriple TileArraySize = new(200, 200, 200);
 
         /* mouse Control */
@@ -45,11 +47,11 @@ namespace tilemap_system
         const float crosshairScale = 0.1f;
         static Vector2 offset;
         static Vector2 screenSize;
-        static List<DDA_ray> drawRays = new List<DDA_ray>();
+        static DDA_ray[,] drawRays = new DDA_ray[resolution.X, resolution.Y];
         static Vector2 FOV = new(2, 2);
         static readonly Point resolution = new(100, 100);
         const float cameraHeight = 60;
-        Vector3 eyePosition;
+        static Vector3 eyePosition;
 
         /* Inventory */
         int helditemSize;
@@ -67,7 +69,7 @@ namespace tilemap_system
         storageInfo mouseHeldItem;
 
         //Point PlayerTileIndex;
-        private static Tile selectedTile = null;
+        private static Tile selectedTile = new();
         //private static Tile[,,] loadedTiles = new List<Tile>();
         //private static Tile[,,] _Tiles;
         private static Player _player;
@@ -105,7 +107,9 @@ namespace tilemap_system
 
         protected override void Initialize()
         {
+
             _font = Content.Load<SpriteFont>("myFont");
+
 
             screenSize = new(
                 1000,
@@ -120,7 +124,13 @@ namespace tilemap_system
             pixelWidth = (int)screenSize.X / resolution.X;
             pixelHeight = (int)screenSize.Y / resolution.Y;
 
-            _player = new Player(World.GetTileFromWorldPos(new(1000, 0, 1000)).Cube.Position);
+            _player = new Player(Tile.GetPosition(1000, 0, 1000));
+            World.Initilize(_player.Position);
+
+            Thread backgroundThread = new Thread(BackgroundTask);
+            backgroundThread.IsBackground = true; // Makes it a background thread
+            backgroundThread.Start();
+
             //_player = new Player(new(100, -100, 0));
 
             base.Initialize();
@@ -199,27 +209,39 @@ namespace tilemap_system
             gameState = GameState.Paused;
             IsMouseVisible = true;
         }
-        private void GetSelectedTile(out Tile? selectedTile, ref Ray ray, int reach)
+        private bool GetSelectedTile(ref Tile selectedTile, out Ray ray, int reach)
         {
-            selectedTile = null;
+            selectedTile = new();
+            ray = new(_player._angle, eyePosition);
             for (int l = 0; l < reach; l++)
             {
-                ray.update(3);
-                Tile tile = World.GetTileFromWorldPos(ray._position);
-                if (tile.Isfull)
+                ray.update(1);
+                if (World.GetTileFromIndex(Tile.getTileIndex(ray._position), out Tile tile))
                 {
-                    selectedTile = tile;
-                    break;
+                    if (tile.Isfull)
+                    {
+                        selectedTile = tile;
+                        return true;
+                    }
                 }
+
             }
+            return false;
         }
-        private void PlaceBlockFromHotbar(ref Tile tile)
+        private void PlaceBlockFromHotbar(IntTriple index)
         {
-            if (!Tile.CollidingTiles(_player.Cube).Contains(tile) //ensures the player is not placing a block inside themself
+            if (!Tile.CollidingTiles(_player.Cube).Contains(index) //ensures the player is not placing a block inside themself
                         && hotbar.GetBlockID(selectedItem) != null) //makes sure your not placing a null value
             {
-                tile.setType((Tile.ID)hotbar.GetBlockID(selectedItem));
-                hotbar.RemoveItems(selectedItem, 1);
+                if (World.GetTileFromIndex(index, out Tile tile))
+                {
+                    if (!tile.Isfull)
+                    {
+                        tile.setType((Tile.ID)hotbar.GetBlockID(selectedItem));
+                        hotbar.RemoveItems(selectedItem, 1);
+                    }
+                }
+
             }
         }
         protected override void Update(GameTime gameTime)
@@ -287,17 +309,13 @@ namespace tilemap_system
             }
             */
             /* enable for jumping to activate */
-            //foreach (Tile tile in Tile.CollidingTiles(new((int)_player.Position.X, _player.Cube.Y_OP, (int)_player.Position.Z, _player.Cube.XSize, 3, _player.Cube.ZSize))) //checks if players onground
-            //{
-            //    if (tile.Isfull)
-            //    {
-            //        if (General.OnPress(_keyboardState, _PreviouskeyboardState, (Keys)Keybind.Jump))
-            //        {
-            //            _player.jump();
-            //            break;
-            //        }
-            //    }
-            //}
+            if (Tile.IsCollision(new((int)_player.Position.X, _player.Cube.Y_OP, (int)_player.Position.Z, _player.Cube.XSize, 3, _player.Cube.ZSize)))
+            {
+                if (General.OnPress(_keyboardState, _PreviouskeyboardState, (Keys)Keybind.Jump))
+                {
+                    _player.jump();
+                }
+            }
 
             /*clamps player angles */
             General.Bound(ref _player._angle.X, (float)Math.Tau);
@@ -311,47 +329,62 @@ namespace tilemap_system
             }
 
 
-            //if (gameState == GameState.Playing)
-            //{
-            //    /* does mining tiles */
-            //    if (selectedTile != null)
-            //    {
-            //        if (General.OnLeftPress(_mouseState, _previousMouseState) && _player.isCreative)
-            //            selectedTile.MineTile(1000);
-            //        else if (_mouseState.LeftButton == ButtonState.Pressed && _player.isSurvival)
-            //            selectedTile.MineTile(5);
-            //    }
-            //    Ray ray = new(_player._angle, eyePosition);
+            if (gameState == GameState.Playing)
+            {
+                /* updates what tile you have selected */
+                //Tile? selectedTile = null;
+                lock (selectedTile)
+                {
+                    if (GetSelectedTile(ref selectedTile, out Ray ray, 160))
+                    {
+                        /* does mining tiles */
+                        if (General.OnLeftPress(_mouseState, _previousMouseState) && _player.isCreative)
+                            ((Tile)selectedTile).MineTile(1000);
+                        else if (_mouseState.LeftButton == ButtonState.Pressed && _player.isSurvival)
+                            ((Tile)selectedTile).MineTile(5);
 
-            //    /* updates what tile you have selected */
-            //    GetSelectedTile(out selectedTile, ref ray, 160); //this is really slow now
+                        /* on right button press, moves the ray back one unit and fills the block its in with block from your hotbar */
+                        if (_mouseState.RightButton == ButtonState.Pressed && _previousMouseState.RightButton != ButtonState.Pressed)
+                        {
+                            ray.reverse(1);
+                            IntTriple tileIndex = Tile.getTileIndex(ray._position);
+                            //Tile tempTile = new();
+                            //Tile tile1 = new();
+                            //if (World.GetTileFromIndex(Tile.getTileIndex(ray._position), ref tile1))
+                            PlaceBlockFromHotbar(tileIndex);
+                        }
+                    }
+                }
 
-            //    /* on right button press, moves the ray back one unit and fills the block its in with block from your hotbar */
-            //    if (_mouseState.RightButton == ButtonState.Pressed)
-            //    {
-            //        ray.reverse(1);
-            //        IntTriple tileIndex = General.Clamp(Tile.getTileIndex(ray._position), new(), TileArraySize);
-            //        PlaceBlockFromHotbar(ref World.GetTile(new (ray._position)));
-            //    }
-            //}
+
+            }
 
 
             /* Does Player Collision & movement */
             _player.move(new(_player.Speed.X, 0, 0));
-            //foreach (Tile tile in Tile.CollidingTiles(_player.Cube))
-            //{
-            //    if (tile.Isfull) { _player.CollisionX(tile.Cube); }
-            //}
+            foreach (IntTriple index in Tile.CollidingTiles(_player.Cube))
+            {
+                if (World.GetTileFromIndex(index, out Tile tile))
+                {
+                    if (tile.Isfull) { _player.CollisionX(Tile.GetCube(index)); }
+                }
+            }
             _player.move(new(0, _player.Speed.Y, 0));
-            //foreach (Tile tile in Tile.CollidingTiles(_player.Cube))
-            //{
-            //    if (tile.Isfull) { _player.CollisionY(tile.Cube); }
-            //}
+            foreach (IntTriple index in Tile.CollidingTiles(_player.Cube))
+            {
+                if (World.GetTileFromIndex(index, out Tile tile))
+                {
+                    if (tile.Isfull) { _player.CollisionY(Tile.GetCube(index)); }
+                }
+            }
             _player.move(new(0, 0, _player.Speed.Z));
-            //foreach (Tile tile in Tile.CollidingTiles(_player.Cube))
-            //{
-            //    if (tile.Isfull) { _player.CollisionZ(tile.Cube); }
-            //}
+            foreach (IntTriple index in Tile.CollidingTiles(_player.Cube))
+            {
+                if (World.GetTileFromIndex(index, out Tile tile))
+                {
+                    if (tile.Isfull) { _player.CollisionZ(Tile.GetCube(index)); }
+                }
+            }
 
             /* updates Player._speed with movement and checks for keypresses etc */
             _player.update(_keyboardState, _PreviouskeyboardState);
@@ -380,10 +413,29 @@ namespace tilemap_system
 
             base.Update(gameTime);
         }
-        async Task CastRays()
+        static object rayLock = new object(); // Lock object for raycasting
+        static void BackgroundTask()
         {
-            drawRays.Clear();
+            while (true)
+            {
+                Console.WriteLine("Background thread running...");
 
+                if (drawTimer.IsActive)
+                {
+                    drawTimer.Reset();
+                }
+                Thread.Sleep(1000 / fps); // Sleep for the duration of one frame
+                //lock (rayLock)
+                //{
+
+                //}
+                //}
+            }
+
+        }
+        static Point halfResolution = new Point(resolution.X / 2, resolution.Y / 2);
+        static void CastRays()
+        {
             float fX = (resolution.X / 2f) / (float)Math.Tan(FOV.X / 2f);
             float fY = (resolution.Y / 2f) / (float)Math.Tan(FOV.Y / 2f);
 
@@ -391,74 +443,95 @@ namespace tilemap_system
             Matrix rotPitch = Matrix.CreateRotationX(_player._angle.Y);
             Matrix viewRot = rotPitch * rotYaw;
 
-            IntTriple clampMax = renderDistance + Tile.getTileIndex(_player.Position);
-            IntTriple clampMin = -clampMax;
-            for (int x = -resolution.X / 2; x < resolution.X / 2; x++)
+            //IntTriple clampMax = renderDistance + Tile.getTileIndex(_player.Position);
+            //IntTriple clampMin = -renderDistance + Tile.getTileIndex(_player.Position);
+
+            // Pre-calculate all rays first
+            DDA_ray[,] tempRays = new DDA_ray[resolution.X, resolution.Y];
+            for (int x = -halfResolution.X; x < halfResolution.X; x++)
             {
-                for (int y = -resolution.Y / 2; y < resolution.Y / 2; y++)
+                for (int y = -halfResolution.Y; y < halfResolution.Y; y++)
                 {
-                    // Aspect ratio correction
                     Vector3 rayDir = new Vector3(-x, y * (fX / fY), -fX);
                     rayDir.Normalize();
-
-                    // Rotate the ray direction into world space
                     Vector3 worldDir = Vector3.Transform(rayDir, viewRot);
-
-                    drawRays.Add(new DDA_ray(eyePosition, eyePosition + worldDir));
+                    tempRays[x + halfResolution.X, y + halfResolution.Y] = (new DDA_ray(eyePosition, eyePosition + worldDir));
                 }
             }
-            await Task.Run(() =>
+
+
+
+            //Parallel.For(0, resolution.Y, y =>
+            for (int y = 0; y < resolution.Y; y++)
             {
-                for (int index = 0; index < drawRays.Count; index++)
+                Parallel.For(0, resolution.X, x =>
+                //for (int x = 0; x < resolution.X; x++)
                 {
-                    drawRays[index]._color = Color.Blue;
-                    for (int l = 0; l < renderDistance.X * 2; l++)
+                    for (int l = 0; l < renderDistance.X; l++)
                     {
-                        IntTriple tileIndex = Tile.getTileIndex(drawRays[index].Update());
-                        if (!tileIndex.inBound(clampMin, clampMax))
+
+                        //IntTriple tileIndex = Tile.getTileIndex(drawrayPosition);
+
+                        //if (!tileIndex.inBound(clampMin, clampMax))
+                        //{
+                        //    break;
+                        //}
+
+                        if (World.GetTileFromIndex(Tile.getTileIndex(tempRays[x, y].Update()), out Tile tile))
                         {
-                            break;
+                            if (tile.Isfull)
+                            {
+                                tempRays[x, y]._color = tile.color * ((500f - tempRays[x, y].lowestDistance) / 500f);
+                                lock (selectedTile)
+                                {
+                                    if (tile == selectedTile)
+                                    {
+                                        tempRays[x, y]._color = Color.White;
+                                    }
+                                }
+                                break;
+                            }
+
                         }
-                        Tile tile = World.GetTileFromIndex(tileIndex);
-                        if (tile.Isfull)
+                        else
                         {
-                            drawRays[index]._color = (tile.color) * ((float)(500f - drawRays[index].lowestDistance) / 500f);
                             break;
                         }
                     }
                 }
-            });
+                );
+            }
+            //);
+
+            lock (drawRays)
+            {
+                drawRays = tempRays;
+            }
+            firstRayCast = true;
         }
-        bool firstRayCast = false;
+        static bool firstRayCast = false;
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.Black);
 
             //a relic of old visualization code, not needed anymore
             //offset = loadDistance.XY - _player.XY - new Vector2(_player.Cube.XSize / 2, _player.Cube.YSize / 2); 
+            World.LoadChunks(_player.Position);
 
+            frameCount++;
+            CastRays();
 
-            if (drawTimer.IsActive && false)
-            {
-                drawTimer.Reset();
-                frameCount++;
-                //raycasting starts here
-                if (CastRays().IsCompleted)
-                firstRayCast = true;
-
-                //if (gameTime.TotalGameTime.Seconds < 0.5 || true)
-                //{
-                //}
-            }
-            int rayIndex = 0;
             _spriteBatch.Begin();
             //draws tiles from previous raycasting
-            if (firstRayCast)
-                for (int x = 0; x < resolution.X; x++)
-                {
-                    for (int y = 0; y < resolution.Y; y++)
+            lock (drawRays)
+            {
+                if (firstRayCast)
+                    for (int x = 0; x < resolution.X; x++)
                     {
-                        _spriteBatch.Draw(Tile._texture,
+                        for (int y = 0; y < resolution.Y; y++)
+                        {
+
+                            _spriteBatch.Draw(Tile._texture,
                             new Rectangle(
                                 x * pixelWidth,
                                 y * pixelHeight,
@@ -466,30 +539,35 @@ namespace tilemap_system
                                 pixelHeight
                                 ),
                             null,
-                            drawRays[rayIndex]._color,
+                            drawRays[x, y]._color,
                             0,
                             new Vector2(),
                             SpriteEffects.None,
                             0.99f
 
                             );
-                        rayIndex += 1;
+                        }
+
                     }
-                }
+            }
             //draws crosshair
             _spriteBatch.Draw(crosshair, crosshairDrawPos, null, Color.White, 0, new Vector2(), crosshairScale, 0, 1);
 
             //draws debug
-            Tile tile = World.GetTileFromWorldPos(_player.Position);
-            _spriteBatch.DrawString(_font, (tile.position.X / Tile.ZSize).ToString(), new(), Color.White);
-            _spriteBatch.DrawString(_font, (tile.position.Y / Tile.YSize).ToString(), new(0, _font.LineSpacing), Color.White);
-            _spriteBatch.DrawString(_font, (tile.position.Z / Tile.XSize).ToString(), new(0, _font.LineSpacing * 2), Color.White);
+            _spriteBatch.DrawString(_font, ((int)(_player.Position.X / Tile.XSize)).ToString(), new(), Color.White);
+            _spriteBatch.DrawString(_font, ((int)(_player.Position.Y / Tile.YSize)).ToString(), new(0, _font.LineSpacing), Color.White);
+            _spriteBatch.DrawString(_font, ((int)(_player.Position.Z / Tile.ZSize)).ToString(), new(0, _font.LineSpacing * 2), Color.White);
             _spriteBatch.DrawString(_font, _player.Position.X.ToString(), new(0, _font.LineSpacing * 4), Color.White);
             _spriteBatch.DrawString(_font, _player.Position.Y.ToString(), new(0, _font.LineSpacing * 5), Color.White);
             _spriteBatch.DrawString(_font, _player.Position.Z.ToString(), new(0, _font.LineSpacing * 6), Color.White);
             _spriteBatch.DrawString(_font, World.GetChunkIndex(_player.Position).X.ToString(), new(0, _font.LineSpacing * 7), Color.White);
             _spriteBatch.DrawString(_font, World.GetChunkIndex(_player.Position).Z.ToString(), new(0, _font.LineSpacing * 8), Color.White);
-            _spriteBatch.DrawString(_font, displayfps.ToString(), new(0, _font.LineSpacing * 3), Color.White);
+            World.DrawDebug(_spriteBatch);
+            //if (World.GetTileFromWorldPos(new(1000 * Tile.XSize, 150 * Tile.YSize, 1000 * Tile.ZSize), ref tile))
+            if (World.GetTileFromIndex(new(1000, 150, 1000), out Tile tile))
+            {
+                _spriteBatch.DrawString(_font, (tile.getType).ToString(), new(0, _font.LineSpacing * 3), Color.White);
+            }
 
             _spriteBatch.Draw(hotbar.GetItemTexture(selectedItem), new Rectangle((int)screenSize.X, (int)screenSize.Y - helditemSize / 4, helditemSize, helditemSize), null, Color.White, (float)Math.Tau * 0.95f, new(helditemSize / 2, helditemSize / 2), SpriteEffects.None, 1);
 
@@ -550,6 +628,7 @@ namespace tilemap_system
             _spriteBatch.End();
 
             base.Draw(gameTime);
+
         }
     }
 }

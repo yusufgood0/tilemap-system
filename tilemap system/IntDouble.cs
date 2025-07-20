@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace tilemap_system
 {
-    internal class IntDouble
+    internal struct IntDouble
     {
         public int X { get; set; }
         public int Z { get; set; }
@@ -23,10 +23,18 @@ namespace tilemap_system
             X = 0;
             Z = 0;
         }
-        public IntDouble(int a, int b)
+        public IntDouble(int x, int z)
         {
-            X = a;
-            Z = b;
+            X = x;
+            Z = z;
+        }
+        public static bool operator ==(IntDouble a, IntDouble b)
+        {
+            return (a.X == b.X && a.Z == b.Z);
+        }
+        public static bool operator !=(IntDouble a, IntDouble b)
+        {
+            return !(a.X == b.X && a.Z == b.Z);
         }
         public static IntDouble operator +(IntDouble a, IntDouble b)
         {

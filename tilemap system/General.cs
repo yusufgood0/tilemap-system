@@ -7,11 +7,81 @@ using Microsoft.Xna.Framework.Input;
 using System.Text;
 using System.Threading.Tasks;
 using System.Reflection.Metadata;
+using System.IO;
 
 namespace tilemap_system
 {
     internal class General
     {
+        public static class IntDoubleArrayVisualizer
+        {
+            public static void VisualizeToFile(Chunk[,] inputArray, string fileName = "array_visualization.txt")
+            {
+                IntDouble[,] array = new IntDouble[inputArray.GetLength(0), inputArray.GetLength(1)];
+                for (int x = 0; x < inputArray.GetLength(0); x++)
+                {
+                    for (int y = 0; y < inputArray.GetLength(1); y++)
+                    {
+                        if (inputArray[x, y] != null)
+                        {
+                            array[x,y] = inputArray[x, y]._chunkIndex;
+                        }
+                    }
+                }
+
+                // Get the MyDocuments folder path
+                string myDocuments = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                string filePath = Path.Combine(myDocuments, fileName);
+
+                // Create the string visualization
+                string visualization = VisualizeToString(array);
+
+                // Write to file
+                File.WriteAllText(filePath, visualization);
+
+                Console.WriteLine($"Visualization saved to: {filePath}");
+            }
+
+            public static string VisualizeToString(IntDouble[,] array)
+            {
+                int rows = array.GetLength(0);
+                int cols = array.GetLength(1);
+
+                // Determine maximum widths for alignment
+                int maxXWidth = 0;
+                int maxZWidth = 0;
+
+                for (int i = 0; i < rows; i++)
+                {
+                    for (int j = 0; j < cols; j++)
+                    {
+                        var current = array[i, j];
+                        maxXWidth = Math.Max(maxXWidth, current.X.ToString().Length);
+                        maxZWidth = Math.Max(maxZWidth, current.Z.ToString().Length);
+                    }
+                }
+
+                // Build the string representation
+                StringBuilder sb = new StringBuilder();
+
+                for (int i = 0; i < rows; i++)
+                {
+                    for (int j = 0; j < cols; j++)
+                    {
+                        var current = array[i, j];
+                        sb.Append($"[{current.X.ToString().PadLeft(maxXWidth)},{current.Z.ToString().PadLeft(maxZWidth)}]");
+
+                        // Add space between elements but not after last element in row
+                        if (j < cols - 1) sb.Append(" ");
+                    }
+
+                    // Add newline except after last row
+                    if (i < rows - 1) sb.AppendLine();
+                }
+
+                return sb.ToString();
+            }
+        }
         public static void Bound(ref float value, float maxValue) //handles overflows of a value by setting it back to zero, and zero to the maxvalue
         {
             value = (value % maxValue + maxValue) % maxValue;
