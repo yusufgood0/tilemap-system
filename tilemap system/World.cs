@@ -35,15 +35,19 @@ namespace tilemap_system
             {
                 lock (_LoadedChunks)
                 {
-                    foreach (Chunk chunk in _LoadedChunks)
+                    for (int xIndex = 0; xIndex < lastIndex; xIndex++)
                     {
-                        if (chunk != null)
+                        for (int yIndex = 0; yIndex < _loadedChunksSize; yIndex++)
                         {
-                            chunk.ArchiveChunk();
+                            if (_LoadedChunks[xIndex, yIndex] == null)
+                            {
+                                Game1.Log("NULL CHUNK SAVE DETECTED!");
+                            }
+                            _LoadedChunks[xIndex, yIndex].ArchiveChunk();
                         }
                     }
                 }
-                Debug.WriteLine(DateTime.Now.ToString() + ": Saved all chunks to archive");
+                Game1.Log("Saved all chunks to archive");
             }
             public static void DrawDebug(SpriteBatch spriteBatch)
             {
@@ -73,7 +77,7 @@ namespace tilemap_system
                             }
                             else
                             {
-                                _LoadedChunks[x, y] = new Chunk(new IntDouble(worldIndex.X, worldIndex.Z));
+                                _LoadedChunks[x, y] = new Chunk(worldIndex, true);
                             }
                         }
                     }
@@ -266,7 +270,7 @@ namespace tilemap_system
                             }
                             else
                             {
-                                loadedChunks[chunkIndex.X, chunkIndex.Z] = new Chunk(worldIndex);
+                                loadedChunks[chunkIndex.X, chunkIndex.Z] = new Chunk(worldIndex, true);
                             }
                         }
                     }
@@ -287,11 +291,11 @@ namespace tilemap_system
                 }
                 if (chunksToArchive.Count > 0)
                 {
-                    Debug.WriteLine(DateTime.Now.ToString() + $": Archiving {chunksToArchive.Count} chunks");
+                    Game1.Log($"Archiving {chunksToArchive.Count} chunks");
                 }
                 if (chunksLoadedFromArchive > 0)
                 {
-                    Debug.WriteLine(DateTime.Now.ToString() + $": Loaded {chunksLoadedFromArchive} chunks from archive");
+                    Game1.Log($"Loaded {chunksLoadedFromArchive} chunks from archive");
                 }
 
                 foreach (Chunk chunk in chunksToArchive)

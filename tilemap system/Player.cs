@@ -186,19 +186,19 @@ namespace tilemap_system
         {
             if (!File.Exists(_saveDirectory))
             {
-                Debug.WriteLine($"Player position file {_saveDirectory} does not exist.");
+                Game1.Log($"Player position file {_saveDirectory} does not exist.");
                 return; // Chunk does not exist in archive. Pull failed
             }
             string[] PlayerPosition = File.ReadAllLines(_saveDirectory);
             if (PlayerPosition.Length < 3)
             {
-                Debug.WriteLine("Could not read PlayerFile");
+                Game1.Log("Could not read PlayerFile");
                 return; // Not enough data to set position
             }
             if (float.TryParse(PlayerPosition[0], out float xPos) && float.TryParse(PlayerPosition[1], out float yPos) && float.TryParse(PlayerPosition[2], out float zPos))
             {
                 _position = new Vector3(xPos, yPos, zPos);
-                Debug.WriteLine("Loaded Player position Successfully");
+                Game1.Log("Loaded Player position Successfully");
             }
         }
         public bool isSurvival { get => gameMode == GameMode.Survival; set; }

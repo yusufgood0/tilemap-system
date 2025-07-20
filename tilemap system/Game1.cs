@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using tilemap_system.tilemap_system;
 using System.Threading;
 using System.Linq.Expressions;
+using System.IO;
 namespace tilemap_system
 {
     public class Game1 : Game
@@ -28,6 +29,11 @@ namespace tilemap_system
         private readonly IntTriple loadDistance = new(200, 200, 200);
         private static readonly IntTriple renderDistance = new(100, 100, 100);
         static readonly IntTriple TileArraySize = new(200, 200, 200);
+
+        /* debug */
+        private static readonly string _logDirectory = Path.Combine(Environment.CurrentDirectory, "HomemadeMinecraft", "log.txt");
+        private static readonly StreamWriter _logWriter = new StreamWriter(_logDirectory, true);
+
 
         /* mouse Control */
         bool _previousIsMouseVisible;
@@ -112,8 +118,18 @@ namespace tilemap_system
             }
             base.Dispose(disposing);
         }
+        public static void Log(string message)
+        {
+            _logWriter.WriteLine($"{DateTime.Now}: {message}");
+            _logWriter.Flush();
+        }
         protected override void Initialize()
         {
+            //if (File.Exists(_logDirectory))
+            //{
+            //    File.Delete(_logDirectory); // Deletes the log file if it exists
+            //    File.Create(_logDirectory).Close(); // Creates a new log file
+            //}
 
             _font = Content.Load<SpriteFont>("myFont");
 

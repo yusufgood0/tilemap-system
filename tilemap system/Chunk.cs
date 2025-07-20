@@ -1,15 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 
 namespace tilemap_system
 {
@@ -35,7 +27,7 @@ namespace tilemap_system
         //}
         public void ArchiveChunk()
         {
-            byte[] data = new byte[_chunkSize * _chunkHeight * _chunkSize];
+            byte[] writeData = new byte[_chunkSize * _chunkHeight * _chunkSize];
 
             // Get tile type and convert to byte
             int i = 0;
@@ -44,54 +36,26 @@ namespace tilemap_system
                 for (int z = 0; z < _chunkSize; z++)
                     for (int x = 0; x < _chunkSize; x++)
                     {
-                        data[i++] = (byte)_Tiles[x, y, z].getType;
+                        writeData[i++] = (byte)_Tiles[x, y, z].getType;
                     }
-            string filePath = Path.Combine(_archiveDirectory, $"C{_chunkIndex.X}_{_chunkIndex.Z}");
+            string filePath = Path.Combine(_archiveDirectory, $"C{_chunkIndex.X}_{_chunkIndex.Z}.txt");
 
-            if (File.Exists(filePath))
-            {
-                File.SetAttributes(filePath, FileAttributes.Temporary);
-            }
+            File.WriteAllBytes(filePath, writeData);
+            Game1.Log($"successfully loaded chunk C{_chunkIndex.X}_{_chunkIndex.Z}.txt");
 
-            File.WriteAllBytes(filePath, data);
-            File.SetAttributes(filePath, FileAttributes.Normal);
-
-
-            //using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
-            //{
-            //    fs.Write(data, 0, data.Length);
-            //}
-
-            //try
-            //{
-            // 1. Write to temp file first
-            //File.WriteAllBytes(tempPath, data);
-
-            // 2. Atomic replace (overwrites if exists)
-            //File.Replace(
-            //    sourceFileName: tempPath,
-            //    destinationFileName: filePath,
-            //    destinationBackupFileName: null); // Set backup path if needed
-            //}
-            //finally
-            //{
-            //    if (File.Exists(tempPath))
-            //        File.Delete(tempPath); // Cleanup
-            //}
-             
         }
         public static bool PullChunkFromArchive(IntDouble chunkIndex, out Chunk outputChunk)
         {
-            outputChunk = new();
+            outputChunk = new(chunkIndex, false);
 
-            string filePath = Path.Combine(_archiveDirectory, $"C{chunkIndex.X}_{chunkIndex.Z}");
+            string filePath = Path.Combine(_archiveDirectory, $"C{chunkIndex.X}_{chunkIndex.Z}.txt");
             if (!File.Exists(filePath))
             {
-                Debug.WriteLine($"Chunk file C{chunkIndex.X}_{chunkIndex.Z} does not exist in archive.");
+                Game1.Log($"Chunk file C{chunkIndex.X}_{chunkIndex.Z} does not exist in archive.");
                 return false; // Chunk does not exist in archive. Pull failed
             }
             byte[] data = File.ReadAllBytes(filePath);
-
+            //File.Delete(filePath); // Delete the file after reading
             int i = 0;
             // loop x -> z -> y to match memory chache layout for efficiency with [,,] arrays
             for (int y = 0; y < _chunkHeight; y++)
@@ -100,40 +64,39 @@ namespace tilemap_system
                     {
                         outputChunk._Tiles[x, y, z] = new Tile((Tile.ID)data[i++]);
                     }
+            Game1.Log($"Successfully pulled chunk C{chunkIndex.X}_{chunkIndex.Z} from archive.");
             return true; // Chunk successfully pulled from archive
         }
 
         public Chunk() { }
-        public Chunk(IntDouble chunkIndex)
+        public Chunk(IntDouble chunkIndex, bool GenerateTiles)
         {
             _chunkIndex = chunkIndex;
-
-            // Calculate world-space chunk origin (in world units)
-            int chunkWorldX = chunkIndex.X * _trueChunkSize;
-            int chunkWorldZ = chunkIndex.Z * _trueChunkSize;
-
-            for (int localX = 0; localX < _chunkSize; localX++)
+            if (GenerateTiles)
             {
-                for (int localY = 0; localY < _chunkHeight; localY++)
+                for (int localX = 0; localX < _chunkSize; localX++)
                 {
-                    for (int localZ = 0; localZ < _chunkSize; localZ++)
+                    for (int localY = 0; localY < _chunkHeight; localY++)
                     {
-                        // Determine tile type based on height
-                        Tile.ID type;
-                        if (localY < 100)
+                        for (int localZ = 0; localZ < _chunkSize; localZ++)
                         {
-                            type = Tile.ID.Empty; // Below height 100, use empty tile
+                            // Determine tile type based on height
+                            Tile.ID type;
+                            if (localY < 100)
+                            {
+                                type = Tile.ID.Empty; // Below height 100, use empty tile
+                            }
+                            else if (localY < 150)
+                            {
+                                type = Tile.ID.Grass; // Between height 100 and 150, use grass tile
+                            }
+                            else
+                            {
+                                type = Tile.ID.Stone; // Above height 150, use stone tile
+                            }
+                            // Create tile with proper world coordinates
+                            _Tiles[localX, localY, localZ] = new Tile(type);
                         }
-                        else if (localY < 150)
-                        {
-                            type = Tile.ID.Grass; // Between height 100 and 150, use grass tile
-                        }
-                        else
-                        {
-                            type = Tile.ID.Stone; // Above height 150, use stone tile
-                        }
-                        // Create tile with proper world coordinates
-                        _Tiles[localX, localY, localZ] = new Tile(type);
                     }
                 }
             }
