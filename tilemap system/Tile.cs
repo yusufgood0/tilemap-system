@@ -12,7 +12,7 @@ using tilemap_system.tilemap_system;
 
 namespace tilemap_system
 {
-    internal class Tile
+    internal struct Tile
     {
         public static Texture2D _texture;
         static readonly int maxHealth = 100;
@@ -21,7 +21,6 @@ namespace tilemap_system
         static readonly int zSize = 40;
 
         //IntTriple _position = new();
-        int _health = maxHealth;
         ID _type;
         public enum ID : byte
         {
@@ -65,14 +64,14 @@ namespace tilemap_system
             spriteBatch.End();
         }// Draws the tile on the screen with the given offset
         */
-        public static IntTriple getTileIndex(Vector3 worldPosition)
+        public static IntTriple GetTileIndex(Vector3 worldPosition)
         {
             int x = (int)(worldPosition.X / xSize);
             int y = (int)(worldPosition.Y / ySize);
             int z = (int)(worldPosition.Z / zSize);
             return new IntTriple(x, y, z);
         }
-        public static IntTriple getTileIndex(IntTriple position)
+        public static IntTriple GetTileIndex(IntTriple position)
         {
             return new IntTriple(
                 position.X / xSize,
@@ -83,14 +82,14 @@ namespace tilemap_system
 
         public static bool IsCollision(Cube cube)
         {
-            IntTriple index1 = getTileIndex(new Vector3(cube.X, cube.Y, cube.Z));
-            IntTriple index2 = getTileIndex(new Vector3(cube.X_OP, cube.Y_OP, cube.Z_OP));
+            IntTriple index1 = GetTileIndex(new Vector3(cube.X, cube.Y, cube.Z));
+            IntTriple index2 = GetTileIndex(new Vector3(cube.X_OP, cube.Y_OP, cube.Z_OP));
 
             for (int x = index1.X; x < index2.X + 1; x++)
                 for (int y = index1.Y; y < index2.Y + 1; y++)
                     for (int z = index1.Z; z < index2.Z + 1; z++)
                     {
-                        if (World.GetTileFromIndex(new(x, y, z), out Tile tile))
+                        if (World.GetTileCopyFromIndex(new(x, y, z), out Tile tile))
                         {
                             if (tile.Isfull)
                             {
@@ -103,10 +102,10 @@ namespace tilemap_system
         }
         public static List<IntTriple> CollidingTilesTriple(Cube cube)
         {
-            List<IntTriple> Indeces = new List<IntTriple>();
+            List<IntTriple> Indeces = new();
 
-            IntTriple index1 = getTileIndex(new Vector3(cube.X, cube.Y, cube.Z));
-            IntTriple index2 = getTileIndex(new Vector3(cube.X_OP, cube.Y_OP, cube.Z_OP));
+            IntTriple index1 = GetTileIndex(new Vector3(cube.X, cube.Y, cube.Z));
+            IntTriple index2 = GetTileIndex(new Vector3(cube.X_OP, cube.Y_OP, cube.Z_OP));
 
             for (int x = index1.X; x < index2.X + 1; x++)
                 for (int y = index1.Y; y < index2.Y + 1; y++)
@@ -139,23 +138,20 @@ namespace tilemap_system
         }
         */
         //public void UpdateTexture() { }
-        public void Heal()
+        public bool MineTile(int TimeMined) //in Milliseconds
         {
-            _health = maxHealth;
-        }
-        public void MineTile(int damage)
-        {
-            _health = _health - damage;
-            if (_health < 0)
+            if (GetTileInfo.GetMineTime() < TimeMined)
             {
-                _health = 0;
-                _type = ID.Empty;
+                _type = ID.Empty; 
+                return true; //tile broke
             }
+            return false; //tile did not break
         }
-        public void setType(ID type)
+        public void SetType(ID type)
         {
             _type = type;
         }
+
         public static Cube GetCube(int Xindex, int Yindex, int Zindex) { return new Cube(GetPosition(Xindex, Yindex, Zindex), XSize, YSize, ZSize); }
         public static Cube GetCube(IntTriple index) { return new Cube(GetPosition(index.X, index.Y, index.Z), XSize, YSize, ZSize); }
         public static IntTriple GetPosition(int Xindex, int Yindex, int Zindex) { return new IntTriple(Xindex * XSize, Yindex * ySize, Zindex * zSize); }
@@ -163,7 +159,8 @@ namespace tilemap_system
         static public int YSize { get => ySize; }
         static public int ZSize { get => zSize; }
         public bool Isfull { get => !(_type == ID.Empty); set; }
-        public ID getType { get => _type; }
-        public Color color { get => TileInfo._tileInfo[(int)_type].getTexture(); }
+        public ID GetType { get => _type; }
+        public Color Color { get => GetTileInfo.GetTexture(); }
+        public ref TileInfo GetTileInfo { get => ref TileInfo._tileInfo[(int)_type]; }
     }
 }

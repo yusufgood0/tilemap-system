@@ -13,6 +13,7 @@ namespace tilemap_system
 {
     internal class General
     {
+        static Stopwatch _doubleClickTimer = new(250);
         public static class IntDoubleArrayVisualizer
         {
             public static void VisualizeToFile(Chunk[,] inputArray, string fileName = "array_visualization.txt")
@@ -62,7 +63,7 @@ namespace tilemap_system
                 }
 
                 // Build the string representation
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new();
 
                 for (int i = 0; i < rows; i++)
                 {
@@ -123,6 +124,30 @@ namespace tilemap_system
             (float)(Math.Sin(angle.Y)),
             (float)(Math.Cos(angle.Y) * Math.Cos(angle.X))
             ), 1);
+        }
+        public static bool OnDoubleClick(MouseState mouseState, MouseState previousMouseState)
+        {
+            if (OnLeftPress(mouseState, previousMouseState))
+            {
+                if (_doubleClickTimer.GetTimeMilliseconds() > 10 && !_doubleClickTimer.IsActive)
+                {
+                    _doubleClickTimer.Reset();
+                    return true;
+                }
+                else
+                {
+                    _doubleClickTimer.Reset();
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static bool OnRightReleased(MouseState mouseState, MouseState previousMouseState)
+        {
+            return (mouseState.RightButton == ButtonState.Released && previousMouseState.RightButton == ButtonState.Pressed);
         }
         public static bool OnRightPress(MouseState mouseState, MouseState previousMouseState)
         {

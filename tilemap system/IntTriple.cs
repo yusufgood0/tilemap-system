@@ -21,6 +21,14 @@ namespace tilemap_system
             Z = 0;
         }
 
+        public static bool operator ==(IntTriple a, IntTriple b)
+        {
+            return a.X == b.X && a.Y == b.Y && a.Z == b.Z;
+        }
+        public static bool operator !=(IntTriple a, IntTriple b)
+        {
+            return a.X != b.X || a.Y != b.Y || a.Z != b.Z;
+        }
         public static IntTriple operator +(IntTriple a, IntTriple b)
         {
             return new IntTriple(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
@@ -45,7 +53,7 @@ namespace tilemap_system
         {
             return new IntTriple(a.X / b, a.Y / b, a.Z / b);
         }
-        public bool inBound(IntTriple min, IntTriple max)
+        public bool InBound(IntTriple min, IntTriple max)
         {
             if (
                 min.X < X && X < max.X &&
@@ -71,7 +79,7 @@ namespace tilemap_system
             Z = (int)vector.Z;
         }
 
-        public Vector2 XY { get => new(X, Y); set; }
-        public (int, int, int) XYZ { get => new(X, Y, Z); set; }
+        public readonly Vector2 XY { get => new(X, Y);}
+        public readonly (int, int, int) XYZ { get => new(X, Y, Z);}
     }
 }

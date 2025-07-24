@@ -17,11 +17,11 @@ namespace tilemap_system
 
         public static bool operator ==(Item a, Item b)
         {
-            return a.Equals(b);
+            return a.ItemName() == b.ItemName();
         }
         public static bool operator !=(Item a, Item b)
         {
-            return !a.Equals(b);
+            return !(a.ItemName() == b.ItemName());
         }
 
         public Item(string name, Texture2D texture, int? blockID)
@@ -38,8 +38,8 @@ namespace tilemap_system
                 Item._items[i] = items[i];
             }
         }
-        public string itemName() => _name;
-        public Texture2D itemTexture() => _textures;
-        public int? itemBlockID() => _blockID;
+        public readonly string ItemName() => _name;
+        public readonly Texture2D ItemTexture() => _textures;
+        public readonly int? ItemBlockID() => _blockID;
     }
 }

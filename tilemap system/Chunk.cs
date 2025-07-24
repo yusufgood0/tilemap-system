@@ -36,7 +36,7 @@ namespace tilemap_system
                 for (int z = 0; z < _chunkSize; z++)
                     for (int x = 0; x < _chunkSize; x++)
                     {
-                        writeData[i++] = (byte)_Tiles[x, y, z].getType;
+                        writeData[i++] = (byte)_Tiles[x, y, z].GetType;
                     }
             string filePath = Path.Combine(_archiveDirectory, $"C{_chunkIndex.X}_{_chunkIndex.Z}.txt");
 

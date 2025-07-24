@@ -96,9 +96,9 @@ namespace tilemap_system
                 _speed.Z = 0;
             }
         }
-        public void update(KeyboardState keyboardState, KeyboardState PreviouskeyboardState)
+        public void update(KeyboardState keyboardState)
         {
-            if (isSurvival)
+            if (IsSurvival)
             {
                 _speed.Y += 0.5f;
             }
@@ -114,11 +114,11 @@ namespace tilemap_system
             _speed.Z *= .75f;
 
         }
-        public void jump()
+        public void Jump()
         {
             _speed.Y -= 10;
         }
-        public void move(Vector3 vector)
+        public void Move(Vector3 vector)
         {
             _position += vector;
         }
@@ -152,7 +152,7 @@ namespace tilemap_system
             {
                 speedChange += General.AngleToVector2(_angle.X + (float)Math.PI / 2);
             }
-            if (isCreative)
+            if (IsCreative)
             {
                 if (keyboardState.IsKeyDown((Keys)Direction.DOWN))
                 {
@@ -174,13 +174,14 @@ namespace tilemap_system
         public void SavePosition()
         {
             if (!File.Exists(_saveDirectory))
-                Directory.CreateDirectory(_saveDirectory);
-            using (StreamWriter writer = new StreamWriter(_saveDirectory))
             {
-                writer.WriteLine(_position.X.ToString());
-                writer.WriteLine(_position.Y.ToString());
-                writer.WriteLine(_position.Z.ToString());
+                Directory.CreateDirectory(_saveDirectory);
             }
+
+            using StreamWriter writer = new(_saveDirectory);
+            writer.WriteLine(_position.X.ToString());
+            writer.WriteLine(_position.Y.ToString());
+            writer.WriteLine(_position.Z.ToString());
         }
         void TryPullPositionFromArchive()
         {
@@ -201,8 +202,8 @@ namespace tilemap_system
                 Game1.Log("Loaded Player position Successfully");
             }
         }
-        public bool isSurvival { get => gameMode == GameMode.Survival; set; }
-        public bool isCreative { get => gameMode == GameMode.Creative; set; }
+        public bool IsSurvival { get => gameMode == GameMode.Survival; set; }
+        public bool IsCreative { get => gameMode == GameMode.Creative; set; }
         public Vector2 XY { get => new(_position.X, _position.Y); set; }
         public Vector3 Speed { get => _speed; set; }
         public Vector3 Position { get => _position; set; }

@@ -18,10 +18,10 @@ namespace tilemap_system
 
 
             private static readonly int _loadedChunksSize = renderDistance * 2 + 1;
-            private static Chunk?[,] _LoadedChunks = new Chunk[_loadedChunksSize, _loadedChunksSize];
-            private static List<IntDouble> _IndecesToLoad = new List<IntDouble>();
-            private static List<Chunk> _ChunksToArchive = new List<Chunk>();
-            private static object _loadedChunkCenterlock = new object(); // Lock for thread safety
+            private static Chunk[,] _LoadedChunks = new Chunk[_loadedChunksSize, _loadedChunksSize];
+            private static List<IntDouble> _IndecesToLoad = new();
+            private static List<Chunk> _ChunksToArchive = new();
+            private static object _loadedChunkCenterlock = new(); // Lock for thread safety
             private static IntDouble _loadedChunkCenter;
             //cached values
             private static int lastIndex = _loadedChunksSize - 1;
@@ -280,7 +280,7 @@ namespace tilemap_system
                 {
                     _LoadedChunks = loadedChunks;
                 }
-                List<Chunk> chunksToArchive = new List<Chunk>();
+                List<Chunk> chunksToArchive = new();
                 lock (_ChunksToArchive)
                 {
                     foreach (Chunk chunk in _ChunksToArchive)
@@ -300,10 +300,10 @@ namespace tilemap_system
 
                 foreach (Chunk chunk in chunksToArchive)
                 {
-                    //if (chunk != null)
-                    //{
-                    chunk.ArchiveChunk();
-                    //}
+                    if (chunk != null)
+                    {
+                        chunk.ArchiveChunk();
+                    }
                 }
             }
             /*
@@ -338,7 +338,21 @@ namespace tilemap_system
                 
             }
             */
-            public static bool GetChunkFromChunksIndex(IntDouble chunkIndex, out Chunk outputChunk)
+            public static ref Chunk GetChunkRefFromChunksIndex(IntDouble chunkIndex)
+            {
+                // Check if the indices are valid
+                if (chunkIndex.X < 0 || chunkIndex.X >= _loadedChunksSize ||
+                    chunkIndex.Z < 0 || chunkIndex.Z >= _loadedChunksSize)
+                {
+                    Exception ChunkOutsideOfLoadedChunks;
+                }
+
+                lock (_LoadedChunks)
+                {
+                    return ref _LoadedChunks[chunkIndex.X, chunkIndex.Z];
+                }
+            }
+            public static bool GetChunkCopyFromChunksIndex(IntDouble chunkIndex, out Chunk outputChunk)
             {
                 // Check if the indices are valid
                 if (chunkIndex.X < 0 || chunkIndex.X >= _loadedChunksSize ||
@@ -380,14 +394,26 @@ namespace tilemap_system
 
             }
             */
-            public static bool GetTileFromIndex(IntTriple trueTileIndex, out Tile outputTile)
+            public static ref Tile GetTileRefFromIndex(IntTriple trueTileIndex)
+            {
+                // Convert tile index to chunk index (divide by chunk size)
+                IntDouble worldIndex = new IntDouble(trueTileIndex) / Chunk._chunkSize;
+                IntDouble ChunksIndex = WorldIndexToLoadedChunksArrayIndex(worldIndex);
+
+                return ref GetChunkRefFromChunksIndex(ChunksIndex).getTileFromWorldIndex(new IntTriple(
+                    trueTileIndex.X - (worldIndex.X * Chunk._chunkSize),
+                    trueTileIndex.Y,
+                    trueTileIndex.Z - (worldIndex.Z * Chunk._chunkSize)
+                    ));
+            }
+            public static bool GetTileCopyFromIndex(IntTriple trueTileIndex, out Tile outputTile)
             {
                 //if (trueTileIndex.Y > 256 || trueTileIndex.Y < 0) { outputTile = new Tile(); return false; } // bounds checking
 
                 // Convert tile index to chunk index (divide by chunk size)
                 IntDouble worldIndex = new IntDouble(trueTileIndex) / Chunk._chunkSize;
                 IntDouble ChunksIndex = WorldIndexToLoadedChunksArrayIndex(worldIndex);
-                if (GetChunkFromChunksIndex(ChunksIndex, out Chunk chunk))
+                if (GetChunkCopyFromChunksIndex(ChunksIndex, out Chunk chunk))
                 {
                     outputTile = chunk.getTileFromWorldIndex(new IntTriple(
                         trueTileIndex.X - (worldIndex.X * Chunk._chunkSize),
@@ -402,8 +428,8 @@ namespace tilemap_system
             public static IntDouble GetChunkIndex(Vector3 worldPos)
             {
                 return new IntDouble(
-                    (int)Math.Floor(worldPos.X / Chunk._trueChunkSize),
-                    (int)Math.Floor(worldPos.Z / Chunk._trueChunkSize));
+                    (int)(worldPos.X / Chunk._trueChunkSize),
+                    (int)(worldPos.Z / Chunk._trueChunkSize));
             }
             public static IntDouble GetWorldChunkIndex(IntDouble worldPos)
             {

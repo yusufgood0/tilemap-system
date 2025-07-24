@@ -6,12 +6,16 @@ using System.Threading.Tasks;
 
 namespace tilemap_system
 {
-    internal class Timer
+    internal struct Stopwatch
     {
         private DateTime startTime;
         private TimeSpan elapsedTime;
-        private float activationTime; //in milliseconds
-        public Timer(int timerLength)
+        private readonly float activationTime; //in milliseconds
+        public Stopwatch()
+        {
+            Reset();
+        }
+        public Stopwatch(int timerLength)
         {
             activationTime = timerLength;
             Reset();
@@ -21,15 +25,9 @@ namespace tilemap_system
             startTime = DateTime.Now;
             elapsedTime = TimeSpan.Zero;
         }
-        public int getTimeMilliseconds()
-        {
-            return (int)(DateTime.Now - startTime).TotalMilliseconds;
-        }
-        public float getTimeSeconds()
-        {
-            return (float)(DateTime.Now - startTime).TotalSeconds;
-        }
-        public bool IsActive { get => getTimeMilliseconds() > activationTime; }
+        public readonly int GetTimeMilliseconds() => (int)(DateTime.Now - startTime).TotalMilliseconds;
+        public readonly float GetTimeSeconds() => (float)(DateTime.Now - startTime).TotalSeconds;
+        public readonly bool IsActive => GetTimeMilliseconds() > activationTime;
         public TimeSpan Elapsed
         {
             get

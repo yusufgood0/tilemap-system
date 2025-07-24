@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace tilemap_system
 {
@@ -27,6 +28,11 @@ namespace tilemap_system
         {
             X = x;
             Z = z;
+        }
+
+        public override bool Equals([NotNullWhen(true)] object obj)
+        {
+            return base.Equals(obj);
         }
         public static bool operator ==(IntDouble a, IntDouble b)
         {

@@ -14,20 +14,18 @@ namespace tilemap_system
 
         string _name;
         Color _textures; // color temporarily as i do not have texture support
+        int _MineTime; // color temporarily as i do not have texture support
 
-        public static bool operator ==(TileInfo a, TileInfo b)
-        {
-            return a.Equals(b);
-        }
-        public static bool operator !=(TileInfo a, TileInfo b)
-        {
-            return !a.Equals(b);
-        }
+        public static bool operator ==(TileInfo a, TileInfo b) => a.GetName() == b.GetName();
+        
+        public static bool operator !=(TileInfo a, TileInfo b) => !(a.GetName() == b.GetName());
+        
 
-        public TileInfo(string name, Color texture)
+        public TileInfo(string name, Color texture, int MineTime)
         {
             _name = name;
             _textures = texture;
+            _MineTime = MineTime;
         }
         public static void ItemSetup(TileInfo[] tiles)
         {
@@ -37,7 +35,8 @@ namespace tilemap_system
                 TileInfo._tileInfo[i] = tiles[i];
             }
         }
-        public string getName() => _name;
-        public Color getTexture() => _textures;
+        public readonly string GetName() => _name;
+        public readonly Color GetTexture() => _textures;
+        public readonly int GetMineTime() => _MineTime;
     }
 }
