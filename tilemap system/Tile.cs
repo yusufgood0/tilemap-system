@@ -9,40 +9,32 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using tilemap_system.tilemap_system;
-
 namespace tilemap_system
 {
     internal struct Tile
     {
-        public static Texture2D _texture;
         static readonly int maxHealth = 100;
-        static readonly int xSize = 40;
-        static readonly int ySize = 40;
-        static readonly int zSize = 40;
+        static readonly int _size = 40;
 
-        //IntTriple _position = new();
-        ID _type;
-        public enum ID : byte
+        TileID _type;
+        public enum TileID : byte
         {
             Empty = 0,
             Grass = 1,
             Stone = 2,
+            DiamondBlock = 3,
         }
         public Tile()
         {
-            _type = ID.Empty;
+            _type = TileID.Empty;
         }
-        public Tile(ID type)
+        public Tile(TileID type)
         {
             _type = type;
         }
         public ref Tile this[IntTriple index] { get => ref this[index.X, index.Y, index.Z]; }
         public ref Tile this[int z, int y, int x] => ref this[x, y, z];
 
-        public static void SetTexture(Texture2D texture)
-        {
-            _texture = texture;
-        }
         /* a relic of old code
         public void Draw(SpriteBatch spriteBatch, Vector2 offset)
         {
@@ -66,17 +58,10 @@ namespace tilemap_system
         */
         public static IntTriple GetTileIndex(Vector3 worldPosition)
         {
-            int x = (int)(worldPosition.X / xSize);
-            int y = (int)(worldPosition.Y / ySize);
-            int z = (int)(worldPosition.Z / zSize);
-            return new IntTriple(x, y, z);
-        }
-        public static IntTriple GetTileIndex(IntTriple position)
-        {
             return new IntTriple(
-                position.X / xSize,
-                position.Y / ySize,
-                position.Z / zSize
+                (int)(worldPosition.X / _size),
+                (int)(worldPosition.Y / _size),
+                (int)(worldPosition.Z / _size)
                 );
         }
 
@@ -89,12 +74,9 @@ namespace tilemap_system
                 for (int y = index1.Y; y < index2.Y + 1; y++)
                     for (int z = index1.Z; z < index2.Z + 1; z++)
                     {
-                        if (World.GetTileCopyFromIndex(new(x, y, z), out Tile tile))
+                        if (World.GetTileCopyFromIndex(new(x, y, z), out Tile tile) && tile.Isfull)
                         {
-                            if (tile.Isfull)
-                            {
-                                return true;
-                            }
+                            return true;
                         }
                     }
 
@@ -137,30 +119,38 @@ namespace tilemap_system
             return tiles;
         }
         */
-        //public void UpdateTexture() { }
-        public bool MineTile(int TimeMined) //in Milliseconds
+        public bool MineTile(int TimeMined, Item item, out float minePercentage) //in Milliseconds
         {
+            if (!TileInfo.TileDictionary[(int)_type].TierRequirmentsMet(item.Tier))
+            {
+                TimeMined /= 2; //if the item tier is lower than the tile tier, it takes twice as long to mine
+            }
+            else if (item.Proficiencies != null && TileInfo.TileDictionary[(int)_type].HasProficiency((ToolProficiency)item.Proficiencies))
+            {
+                TimeMined = (int)(TimeMined * (float)item.MineSpeedBonus);
+            }
+
             if (GetTileInfo.GetMineTime() < TimeMined)
             {
-                _type = ID.Empty; 
+                _type = TileID.Empty;
+                minePercentage = 1; //100% mined
                 return true; //tile broke
             }
+            minePercentage = (float)TimeMined / GetTileInfo.GetMineTime();
             return false; //tile did not break
         }
-        public void SetType(ID type)
+        public void SetType(TileID type)
         {
             _type = type;
         }
 
-        public static Cube GetCube(int Xindex, int Yindex, int Zindex) { return new Cube(GetPosition(Xindex, Yindex, Zindex), XSize, YSize, ZSize); }
-        public static Cube GetCube(IntTriple index) { return new Cube(GetPosition(index.X, index.Y, index.Z), XSize, YSize, ZSize); }
-        public static IntTriple GetPosition(int Xindex, int Yindex, int Zindex) { return new IntTriple(Xindex * XSize, Yindex * ySize, Zindex * zSize); }
-        static public int XSize { get => xSize; }
-        static public int YSize { get => ySize; }
-        static public int ZSize { get => zSize; }
-        public bool Isfull { get => !(_type == ID.Empty); set; }
-        public ID GetType { get => _type; }
+        public static Cube GetCube(int Xindex, int Yindex, int Zindex) => new Cube(GetPosition(Xindex, Yindex, Zindex), Size);
+        public static Cube GetCube(IntTriple index) => new Cube(GetPosition(index.X, index.Y, index.Z), Size, Size, Size);
+        public static IntTriple GetPosition(int Xindex, int Yindex, int Zindex) => new IntTriple(Xindex * Size, Yindex * Size, Zindex * Size);
+        static public int Size { get => _size; }
+        public bool Isfull { get => !(_type == TileID.Empty); set; }
+        new public TileID GetType { get => _type; }
         public Color Color { get => GetTileInfo.GetTexture(); }
-        public ref TileInfo GetTileInfo { get => ref TileInfo._tileInfo[(int)_type]; }
+        public ref TileInfo GetTileInfo { get => ref TileInfo.TileDictionary[(int)_type]; }
     }
 }

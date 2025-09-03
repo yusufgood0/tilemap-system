@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Input;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using tilemap_system.tilemap_system;
 
 namespace tilemap_system
 {
@@ -33,17 +34,17 @@ namespace tilemap_system
 
             // Moves the ray to the first edge of a tile it will hit
             // Then will move by exactly one tile in the direction of the ray
-            if (_direction.X < 0) { Xpos += X_Step * (Xpos.X % Tile.XSize) + _direction; }
-            else { Xpos += X_Step * (Tile.XSize - (Xpos.X % Tile.XSize)) + _direction; }
-            if (_direction.Y < 0) { Ypos += Y_Step * (Ypos.Y % Tile.YSize) + _direction; }
-            else { Ypos += Y_Step * (Tile.YSize -(Ypos.Y % Tile.YSize)) + _direction; }
-            if (_direction.Z < 0) { Zpos += Z_Step * (Zpos.Z % Tile.ZSize) + _direction; }
-            else { Zpos += Z_Step * (Tile.ZSize - (Zpos.Z % Tile.ZSize)) + _direction; }
+            if (_direction.X < 0) { Xpos += X_Step * (Xpos.X % Tile.Size) + _direction; }
+            else { Xpos += X_Step * (Tile.Size - (Xpos.X % Tile.Size)) + _direction; }
+            if (_direction.Y < 0) { Ypos += Y_Step * (Ypos.Y % Tile.Size) + _direction; }
+            else { Ypos += Y_Step * (Tile.Size - (Ypos.Y % Tile.Size)) + _direction; }
+            if (_direction.Z < 0) { Zpos += Z_Step * (Zpos.Z % Tile.Size) + _direction; }
+            else { Zpos += Z_Step * (Tile.Size - (Zpos.Z % Tile.Size)) + _direction; }
 
             // Scale the steps to the size of a tile
-            X_Step *= Tile.XSize;
-            Y_Step *= Tile.YSize;
-            Z_Step *= Tile.ZSize;
+            X_Step *= Tile.Size;
+            Y_Step *= Tile.Size;
+            Z_Step *= Tile.Size;
         }
         /* This constructor is not used, but it was part of the original code.
         public DDA_ray(Vector3 position, Vector2 angle)
@@ -116,6 +117,29 @@ namespace tilemap_system
                 return Zpos - Z_Step;
             }
         }
+        public static bool CheckLineOfSight(Vector3 pos1, Vector3 pos2)
+        {
+            DDA_ray ray = new DDA_ray(pos1, pos2);
+            float Distance = Vector3.Distance(pos1, pos2);
+            int renderDistance = (int)(Distance / Tile.Size) + 1; // +1 to ensure we check the last tile
+            for (int l = 0; l < renderDistance; l++)
+            {
+                IntTriple TileIndex = Tile.GetTileIndex(ray.Update());
+                if (World.GetTileCopyFromIndex(TileIndex, out Tile tile))
+                {
+                    if (tile.Isfull)
+                    {
+                        return false; // If we hit a full tile, return false
+                    }
+                }
+                else
+                {
+                    return false; // If we could not retrieve the tile, return false [MAY CAUSE ERROS IF UNHANDLED]
+                }
+            }
+            return true; // If we did not hit any full tiles, return true
+        }
+
         float _lowestDistanceSquared;
         public readonly float LowestDistanceSquared { get => _lowestDistanceSquared; }
     }

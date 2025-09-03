@@ -15,10 +15,13 @@ using tilemap_system.tilemap_system;
 using System.Threading;
 using System.Linq.Expressions;
 using System.IO;
+using System.Diagnostics;
 namespace tilemap_system
 {
     public class Game1 : Game
     {
+
+        /* Game Setup */
         private readonly GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
         KeyboardState _keyboardState, _PreviouskeyboardState;
@@ -26,88 +29,90 @@ namespace tilemap_system
         public readonly Random _random = new();
         public static SpriteFont _font;
 
-        private readonly IntTriple loadDistance = new(200, 200, 200);
-        private static readonly IntTriple renderDistance = new(100, 100, 100);
-        static readonly IntTriple TileArraySize = new(200, 200, 200);
-
-        /* debug */
+        /* Debug */
         private static readonly string _logDirectory = Path.Combine(Environment.CurrentDirectory, "HomemadeMinecraft", "log.txt");
-        private static readonly StreamWriter _logWriter = new(_logDirectory, true);
+        //private static readonly StreamWriter _logWriter = new(_logDirectory, true);
 
-
-        /* mouse Control */
+        /* Mouse Control */
         bool _previousIsMouseVisible;
         float sensitivity = .01f;
 
-        /* draw */
+        /* Draw */
         const int fps = 60;
         static readonly Stopwatch drawTimer = new(1000 / fps); // in milliseconds
         static object frameCountLock = new();
         static int frameCount = 0;
-        static readonly Stopwatch fpsCheckInterval = new(1000); // 5 second timer
+        static readonly Stopwatch fpsCheckInterval = new(1000); // 1 second timer
         static int displayfps; // used for displaying fps in the game
 
-
+        /* Crosshair */
         static Texture2D crosshair;
         static Vector2 crosshairDrawPos;
         const float crosshairScale = 0.1f;
-        static Vector2 offset;
-        static Point screenSize;
-        static DDA_ray[,] drawRays = new DDA_ray[resolution.X, resolution.Y];
-        static Vector2 FOV = new(2, 2);
-        static readonly Point resolution = new(160, 100); //in pixels
-        int pixelWidth = 8;
-        int pixelHeight = 8;
+
+        /* Raycasting */
+        static readonly int renderDistance = 100; // In Tiles
         const float cameraHeight = 60;
         static Vector3 eyePosition;
+        static DDA_ray[,] drawRays = new DDA_ray[resolution.X, resolution.Y];
+
+        /* General Drawing */
+        public static Point screenSize;
+        public static Vector2 FOV = new(2, 2);
+
+        /* Resolution and pixel size */
+        static readonly Point resolution = new(128, 80); //in pixels (cannot be an odd number) ratio 8:5 recommended
+        int pixelWidth = 10;
+        int pixelHeight = 10;
 
         /* Inventory */
+        Container[] _activeContainers; // used for storing the containers and their rectangles for drawing and interaction
+        Rectangle[][] _activeContainerRects; // used for storing the containers and their rectangles for drawing and interaction
+
+        // Hand size for drawing
         int helditemSize;
 
-        int selectedItem;
-        StorageInfo hotbar;
-        const int hotbarSize = 80;
-        Rectangle[] hotbarRects;
-        Point hotbarPosition;
 
-        StorageInfo inventory;
+        // Container Draw
+        const int hotbarSize = 80;
         int rowCount;
+
+
+        // Hotbar
+        int selectedItem;
+        Container hotbar;
+        Rectangle[] hotbarRects;
+
+        // Inventory
+        Container inventory;
         Rectangle[] inventoryRects;
 
-        StorageInfo mouseHeldItem;
+        // Container
+        // Container will be provided on a use case scenario (ex: chests)
+        Rectangle[] containerRects;
+
+        // Item held by mouse for interaction
+        ItemSlot mouseHeldItem;
 
         /* Tile Interactions*/
         private static IntTriple _selectedTile = new();
         private static object _selectedTileLock = new();
         private static object _mineTimeLock = new(); //how long the player has been mining a Tile
         private static Stopwatch _mineTime = new(); //how long the player has been mining a Tile
-        private static Stopwatch _PlaceBlockTimer = new(1); //used for timing tile placement
+        private static Stopwatch _PlaceBlockTimer = new(200); //used for timing tile placement
+        private static float _minePercentage = 1; //percentage of the tile mined, used for visualizing mining progress
 
         /* Loading Objects */
-        private static Player _player;
-        public static Texture2D square;
-        private static Slider[] menuSliders = new Slider[1];
+        static Player _player;
+        public static Texture2D _square;
+        static List<DroppedItem> _droppedItems = new List<DroppedItem>();
+        static Slider[] _menuSliders = new Slider[2];
 
+        /* for input */
         float scrollwheelChange;
-        public enum Keybind
-        {
-            up = Keys.W,
-            down = Keys.S,
-            Left = Keys.A,
-            Right = Keys.D,
-            Jump = Keys.Space,
-            sneak = Keys.LeftShift,
-            inventory = Keys.E,
-            pause = Keys.Escape,
-        }
+
         GameState gameState = GameState.Playing;
-        public enum GameState
-        {
-            Playing,
-            Paused,
-            Inventory
-        }
-        static readonly Rectangle sensitivitySliderRect = new((int)(Game1.screenSize.X * .1f), (int)(Game1.screenSize.Y * .4f), (int)(Game1.screenSize.X * .3f), (int)(Game1.screenSize.Y * .05f));
+
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -125,19 +130,24 @@ namespace tilemap_system
         }
         public static void Log(string message)
         {
-            _logWriter.WriteLine($"{DateTime.Now}: {message}");
-            _logWriter.Flush();
+
+            File.WriteAllText(_logDirectory, message); // Clears the log file before writing new messages
+            //_logWriter.WriteLine($"{DateTime.Now}: {message}");
+            //_logWriter.Flush();
         }
         protected override void Initialize()
         {
-            //if (File.Exists(_logDirectory))
-            //{
-            //    File.Delete(_logDirectory); // Deletes the log file if it exists
-            //    File.Create(_logDirectory).Close(); // Creates a new log file
-            //}
+            if (File.Exists(_logDirectory))
+            {
+                File.Delete(_logDirectory); // Deletes the log file if it exists
+            }
+            else
+            {
+                Directory.CreateDirectory(_logDirectory);
+            }
+            File.Create(_logDirectory).Close(); // Creates a new log file
 
             _font = Content.Load<SpriteFont>("myFont");
-
 
             screenSize = new(
                 resolution.X * pixelWidth,
@@ -147,6 +157,8 @@ namespace tilemap_system
             _graphics.PreferredBackBufferWidth = (int)screenSize.X;
             _graphics.PreferredBackBufferHeight = (int)screenSize.Y;
             _graphics.ApplyChanges();
+
+            drawRays = new DDA_ray[resolution.X, resolution.Y];
 
             helditemSize = (int)(screenSize.Y * 0.4);
 
@@ -170,68 +182,86 @@ namespace tilemap_system
             crosshair = Content.Load<Texture2D>("minecraftCrosshair");
             crosshairDrawPos = new Vector2((int)(screenSize.X / 2 - crosshair.Width / 2 * crosshairScale), (int)(screenSize.Y / 2 - crosshair.Height / 2 * crosshairScale));
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            Tile.SetTexture(Content.Load<Texture2D>("square"));
             Player.SetTexture(Content.Load<Texture2D>("square"));
-            square = Content.Load<Texture2D>("square");
-            TileInfo.ItemSetup(new TileInfo[] {
-
-                new("Empty", Color.White, 1),
-                new("Grass", Color.Green, 1000),
-                new("Stone", Color.Gray, 2500)
-
-            });
+            _square = Content.Load<Texture2D>("square");
 
 
-            Item.ItemSetup(new Item[] {
+            TileInfo.Initialize(); // Initializes the tile info
+            Item.Initialize(GraphicsDevice, _square); // Initializes the item info
 
-                new("Empty", Content.Load<Texture2D>("square"), null),
-                new("Grass", Content.Load<Texture2D>("grassblockItem"), (int)Tile.ID.Grass),
-                new("Stone", Content.Load<Texture2D>("stoneItem"), (int)Tile.ID.Stone)
-
-                });
+            using (Stream stream = File.Create("myTexture"))
+            {
+                _square.SaveAsPng(stream, _square.Width, _square.Height);
+                stream.Flush();
+            }
 
             selectedItem = 0;
             hotbar = new(9);
             inventory = new(27);
-            mouseHeldItem = new(1);
+            mouseHeldItem = new();
 
-            hotbarPosition = new Point((int)(screenSize.X / 2 - (hotbarSize * hotbar.Count) / 2), (int)(screenSize.Y - hotbarSize * 4));
+            Point InventoryDrawPosition = new Point((int)(screenSize.X / 2 - (hotbarSize * hotbar.GetSlotCount) / 2), (int)(screenSize.Y - hotbarSize * 4));
 
-            hotbarRects = new Rectangle[hotbar.Count];
-            for (int i = 0; i < hotbar.Count; i++)
+            hotbarRects = new Rectangle[hotbar.GetSlotCount];
+            for (int x = 0; x < hotbar.GetSlotCount; x++)
             {
-                hotbarRects[i] = new Rectangle(hotbarPosition.X + i * hotbarSize, hotbarPosition.Y + hotbarSize * 3, hotbarSize, hotbarSize);
+                hotbarRects[x] = new Rectangle(InventoryDrawPosition.X + x * hotbarSize, InventoryDrawPosition.Y + hotbarSize * 3, hotbarSize, hotbarSize);
             }
 
-            rowCount = inventory.Count / hotbar.Count;
-            inventoryRects = new Rectangle[inventory.Count];
+            rowCount = inventory.GetSlotCount / hotbar.GetSlotCount;
+            inventoryRects = new Rectangle[inventory.GetSlotCount];
             int index = 0;
             for (int y = 0; y < rowCount; y++)
             {
-                for (int x = 0; x < hotbar.Count; x++)
+                for (int x = 0; x < hotbar.GetSlotCount; x++)
                 {
-                    inventoryRects[index] = new Rectangle(hotbarPosition.X + x * hotbarSize, hotbarPosition.Y + y * hotbarSize, hotbarSize, hotbarSize);
+                    inventoryRects[index] = new Rectangle(InventoryDrawPosition.X + x * hotbarSize, InventoryDrawPosition.Y + y * hotbarSize - 10, hotbarSize, hotbarSize);
+                    index++;
+                }
+            }
+            containerRects = new Rectangle[inventory.GetSlotCount];
+            index = 0;
+            for (int y = 0; y < rowCount; y++)
+            {
+                for (int x = 0; x < hotbar.GetSlotCount; x++)
+                {
+                    containerRects[index] = new Rectangle(InventoryDrawPosition.X + x * hotbarSize, InventoryDrawPosition.Y + y * hotbarSize - 20 - hotbarSize * 3, hotbarSize, hotbarSize);
                     index++;
                 }
             }
 
-            menuSliders[0] = new Slider(square,
-            new((int)(Game1.screenSize.X * .6f), (int)(Game1.screenSize.Y * .4f), (int)(Game1.screenSize.X * .3f), (int)(Game1.screenSize.Y * .05f)),
-            0f,
-            (float)Math.PI * 2,
-            //4,
-            Color.Black,
-            Color.Red,
-            "FOV",
-            1f,
-            10
-            );
+            _activeContainerRects = new Rectangle[][] { hotbarRects };
+            _activeContainers = new Container[] { hotbar };
+
+            _menuSliders[0] = new Slider(_square,
+                new((int)(Game1.screenSize.X * .6f), (int)(Game1.screenSize.Y * .4f), (int)(Game1.screenSize.X * .3f), (int)(Game1.screenSize.Y * .05f)),
+                0.5f,
+                2,
+                Color.Black,
+                Color.Red,
+                "FOV",
+                1f,
+                10
+                );
+            _menuSliders[1] = new Slider(_square,
+                new((int)(Game1.screenSize.X * .1f), (int)(Game1.screenSize.Y * .4f), (int)(Game1.screenSize.X * .3f), (int)(Game1.screenSize.Y * .05f)),
+                0.002f,
+                0.02f,
+                Color.Black,
+                Color.Red,
+                "Sensitivity",
+                1f,
+                5000
+                );
             // TODO: use this.Content to load your game content here
         }
         internal void Play(out GameState gameState)
         {
             gameState = GameState.Playing;
             IsMouseVisible = false;
+
+            _activeContainerRects = new Rectangle[][] { hotbarRects };
+            _activeContainers = new Container[] { hotbar };
         }
         internal void Pause(out GameState gameState)
         {
@@ -244,50 +274,53 @@ namespace tilemap_system
             ray = new(_player._angle, eyePosition);
             for (int l = 0; l < reach; l++)
             {
-                ray.update(1);
                 if (World.GetTileCopyFromIndex(Tile.GetTileIndex(ray._position), out Tile tile) && tile.Isfull)
                 {
                     selectedTile = Tile.GetTileIndex(ray._position);
                     return true;
                 }
-
+                ray.update(1);
             }
             return false;
         }
         private void PlaceBlockFromHotbar(IntTriple index)
         {
-            if (!Tile.CollidingTilesTriple(_player.Cube).Contains(index) && hotbar.GetBlockID(selectedItem) != null) //makes sure your not placing a null value
+            Tile.TileID? newBlockID = hotbar.GetSlot(selectedItem).ItemType.ItemBlockID;
+            if (!Tile.CollidingTilesTriple(_player.Cube).Contains(index) && newBlockID != null) //makes sure your not placing a null value
             {
                 ref Tile tile = ref World.GetTileRefFromIndex(index);
                 if (!tile.Isfull)
                 {
-                    tile.SetType((Tile.ID)hotbar.GetBlockID(selectedItem));
-                    hotbar.RemoveItems(selectedItem, 1);
+                    tile.SetType((Tile.TileID)newBlockID);
+                    hotbar.GetSlot(selectedItem) = hotbar.GetSlot(selectedItem) - 1;
                 }
             }
         }
         protected override void Update(GameTime gameTime)
         {
+            ref ItemSlot selectedSlot = ref hotbar.GetSlot(selectedItem);
+
             eyePosition = new Vector3(_player.Cube.Center.X, _player.Cube.Y_OP - cameraHeight, _player.Cube.Center.Z);
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 Exit();
             _mouseState = Mouse.GetState();
             _keyboardState = Keyboard.GetState();
-            //loadedTiles = Tile.getLoaded(_player.Position, loadDistance, TileArraySize, _Tiles);
-            //Chunk currentChunk = World.GetChunk(new IntDouble(_player.Position));
+
+            Item.SaveTextures();
 
             scrollwheelChange = _mouseState.ScrollWheelValue - _previousMouseState.ScrollWheelValue;
             if (scrollwheelChange != 0)
             {
                 if (scrollwheelChange > 0)
                 {
-                    selectedItem = General.Bound(selectedItem + 1, hotbar.Count);
+                    selectedItem = General.Bound(selectedItem + 1, hotbar.GetSlotCount);
                 }
                 else if (scrollwheelChange < 0)
                 {
-                    selectedItem = General.Bound(selectedItem - 1, hotbar.Count);
+                    selectedItem = General.Bound(selectedItem - 1, hotbar.GetSlotCount);
                 }
             }
+
             /* opens inventory on button press */
             if (General.OnPress(_keyboardState, _PreviouskeyboardState, (Keys)Keybind.inventory))
             {
@@ -295,6 +328,8 @@ namespace tilemap_system
                 {
                     gameState = GameState.Inventory;
                     IsMouseVisible = true;
+                    _activeContainerRects = new Rectangle[][] { hotbarRects, inventoryRects };
+                    _activeContainers = new Container[] { hotbar, inventory };
                 }
                 else
                 {
@@ -314,22 +349,8 @@ namespace tilemap_system
                 }
             }
 
-            if (!_previousIsMouseVisible)
-            {
-                _player._angle.X += (Mouse.GetState().X - screenSize.X / 2) * sensitivity;
-                _player._angle.Y += (Mouse.GetState().Y - screenSize.Y / 2) * sensitivity;
-            }
-            if (!IsMouseVisible)
-            {
-                Mouse.SetPosition((int)screenSize.X / 2, (int)screenSize.Y / 2);
-            }
-            /*
-            for (int i = 0; i < currentChunk.Count; i++)
-            {
-                if (loadedTiles[i].Isfull && loadedTiles[i] != selectedTile)
-                    loadedTiles[i].Heal();
-            }
-            */
+            _player.SafeControlAngleWithMouse(_previousIsMouseVisible, IsMouseVisible, screenSize, sensitivity);
+
             /* enable for jumping to activate */
             if (Tile.IsCollision(new((int)_player.Position.X, _player.Cube.Y_OP, (int)_player.Position.Z, _player.Cube.XSize, 3, _player.Cube.ZSize)))
             {
@@ -346,15 +367,44 @@ namespace tilemap_system
             /* checks inventory interaction when inventory is open */
             if (gameState == GameState.Inventory)
             {
-                inventory.CheckSlotInteractions(_mouseState, _previousMouseState, inventoryRects, ref mouseHeldItem);
-                hotbar.CheckSlotInteractions(_mouseState, _previousMouseState, hotbarRects, ref mouseHeldItem);
+                Container.CheckInteraction(
+                    ref mouseHeldItem,
+                    ref _activeContainers,
+                    ref _activeContainerRects,
+                    _mouseState,
+                    _previousMouseState);
+                hotbar = _activeContainers[0];
+                inventory = _activeContainers[1];
             }
 
+            var pickupContainers = new Container[] { hotbar, inventory };
+            lock (_droppedItems)
+            {
+                for (int i = 0; i < _droppedItems.Count; i++)
+                {
+                    _droppedItems[i].Physics();
+                    if (_droppedItems[i].GetLifespan > 300000) // 300000ms is 5 minutes
+                    {
+                        _droppedItems.RemoveAt(i--);
+                        continue;
+                    }
+                    float distance = Vector3.Distance(_droppedItems[i].Position, _player.Cube.Center);
+                    if (distance < 80 && _droppedItems[i].GetLifespan > 1000)
+                    {
+                        if (_droppedItems[i].Pickup(ref pickupContainers))
+                        {
+                            _droppedItems.RemoveAt(i--);
+                            continue;
+                        }
+                    }
+                }
+            }
+            hotbar = pickupContainers[0];
+            inventory = pickupContainers[1];
 
             if (gameState == GameState.Playing)
             {
-                /* updates what tile you have selected */
-                //Tile? selectedTile = null;
+                /* updates what tile you have selected, does tile mining and placing */
                 lock (_selectedTileLock)
                 {
                     if (GetSelectedTile(ref _selectedTile, out Ray ray, 160))
@@ -365,27 +415,48 @@ namespace tilemap_system
                         {
                             if (General.OnLeftPress(_mouseState, _previousMouseState) && _player.IsCreative)
                             {
-                                (tile).MineTile(Int32.MaxValue);
+                                (tile).MineTile(Int32.MaxValue, Item.GetItem(ItemValue.Empty), out _minePercentage);
                             }
                             else if (_mouseState.LeftButton == ButtonState.Pressed && _player.IsSurvival)
                             {
-                                if (tile.MineTile(_mineTime.GetTimeMilliseconds()))
+                                if (tile.MineTile(_mineTime.GetTimeMilliseconds(), selectedSlot.ItemType, out _minePercentage))
                                 {
+                                    _minePercentage = 0;
                                     _mineTime.Reset();
                                 }
                             }
                             else
                             {
+                                _minePercentage = 0;
                                 _mineTime.Reset();
                             }
                         }
                         /* on right button press, moves the ray back one unit and fills the block its in with block from your hotbar */
-                        if (_mouseState.RightButton == ButtonState.Pressed && _PlaceBlockTimer.IsActive)
+                        if (_mouseState.RightButton == ButtonState.Pressed && (_PlaceBlockTimer.IsActive || _previousMouseState.RightButton == ButtonState.Released))
                         {
+                            //if (tile.GetTileInfo.)
                             _PlaceBlockTimer.Reset();
-                            ray.reverse(10);
+                            ray.reverse(1);
                             IntTriple tileIndex = Tile.GetTileIndex(ray._position);
                             PlaceBlockFromHotbar(tileIndex);
+
+                        }
+                    }
+                }
+                if (General.OnPress(_keyboardState, _PreviouskeyboardState, (Keys)Keybind.DropItem) && selectedSlot.Amount > 0)
+                {
+                    if (_keyboardState.IsKeyDown(Keys.LeftControl))
+                    {
+                        lock (_droppedItems)
+                        {
+                            _droppedItems.Add(selectedSlot.Drop(eyePosition, _player.dirVector * 4));
+                        }
+                    }
+                    else
+                    {
+                        lock (_droppedItems)
+                        {
+                            _droppedItems.Add(selectedSlot.DropOne(eyePosition, _player.dirVector * 4));
                         }
                     }
                 }
@@ -400,25 +471,25 @@ namespace tilemap_system
             _player.Move(new(_player.Speed.X, 0, 0));
             foreach (IntTriple index in Tile.CollidingTilesTriple(_player.Cube))
             {
-                if (World.GetTileCopyFromIndex(index, out Tile tile))
+                if (World.GetTileCopyFromIndex(index, out Tile tile) && tile.Isfull)
                 {
-                    if (tile.Isfull) { _player.CollisionX(Tile.GetCube(index)); }
+                    _player.CollisionX(Tile.GetCube(index));
                 }
             }
             _player.Move(new(0, _player.Speed.Y, 0));
             foreach (IntTriple index in Tile.CollidingTilesTriple(_player.Cube))
             {
-                if (World.GetTileCopyFromIndex(index, out Tile tile))
+                if (World.GetTileCopyFromIndex(index, out Tile tile) && tile.Isfull)
                 {
-                    if (tile.Isfull) { _player.CollisionY(Tile.GetCube(index)); }
+                    _player.CollisionY(Tile.GetCube(index));
                 }
             }
             _player.Move(new(0, 0, _player.Speed.Z));
             foreach (IntTriple index in Tile.CollidingTilesTriple(_player.Cube))
             {
-                if (World.GetTileCopyFromIndex(index, out Tile tile))
+                if (World.GetTileCopyFromIndex(index, out Tile tile) && tile.Isfull)
                 {
-                    if (tile.Isfull) { _player.CollisionZ(Tile.GetCube(index)); }
+                    _player.CollisionZ(Tile.GetCube(index));
                 }
             }
 
@@ -428,8 +499,9 @@ namespace tilemap_system
             /* makes sure the sliders are checking if theyre being pressed */
             if (gameState == GameState.Paused)
             {
-                menuSliders[0].SliderUpdate(_mouseState, _previousMouseState, ref FOV.X);
-                menuSliders[0].SliderUpdate(_mouseState, _previousMouseState, ref FOV.Y);
+                _menuSliders[0].SliderUpdate(_mouseState, _previousMouseState, ref FOV.X);
+                _menuSliders[0].SliderUpdate(_mouseState, _previousMouseState, ref FOV.Y);
+                _menuSliders[1].SliderUpdate(_mouseState, _previousMouseState, ref sensitivity);
             }
 
             if (fpsCheckInterval.IsActive)
@@ -465,7 +537,22 @@ namespace tilemap_system
                 {
                     frameCount++;
                 }
+                lock (_droppedItems)
+                {
+                    for (int i = 0; i < _droppedItems.Count; i++)
+                    {
+                        _droppedItems[i].UpdateDrawInfo(
+                            screenSize,
+                            FOV.X,
+                            eyePosition,
+                            _player._angle.Y,
+                            _player._angle.X
+                            );
+                    }
+                }
+                var startTime = DateTime.Now;
                 CastRays();
+                Debug.WriteLine((DateTime.Now-startTime).TotalMilliseconds);
                 Thread.Sleep(1000 / fps);
             }
         }
@@ -474,7 +561,7 @@ namespace tilemap_system
         static Point halfResolution = new(resolution.X / 2, resolution.Y / 2);
 
 
-        static void CastRays()
+        static unsafe void CastRays()
         {
             Matrix rotYaw = Matrix.CreateRotationY(_player._angle.X - (float)Math.PI);
             Matrix rotPitch = Matrix.CreateRotationX(_player._angle.Y);
@@ -486,7 +573,7 @@ namespace tilemap_system
             //IntTriple clampMin = -renderDistance + Tile.getTileIndex(_player.Position);
 
             // Pre-calculate all rays first
-            DDA_ray[,] tempRays = new DDA_ray[resolution.X, resolution.Y];
+            DDA_ray[] tempRays = new DDA_ray[resolution.X * resolution.Y]; // One dimentional for less bound checks
             for (int x = -halfResolution.X; x < halfResolution.X; x++)
             {
                 for (int y = -halfResolution.Y; y < halfResolution.Y; y++)
@@ -494,49 +581,53 @@ namespace tilemap_system
                     Vector3 rayDir = new(-x, y * (fX / fY), -fX);
                     rayDir.Normalize();
                     Vector3 worldDir = Vector3.Transform(rayDir, viewRot);
-                    tempRays[x + halfResolution.X, y + halfResolution.Y] = (new DDA_ray(eyePosition, eyePosition + worldDir));
+                    tempRays[(y + halfResolution.Y) * resolution.X + (x + halfResolution.X)] = (new DDA_ray(eyePosition, eyePosition + worldDir));
                 }
             }
 
+            // load in a copy of selectedTile
             IntTriple selectedTile;
             lock (_selectedTileLock)
             {
                 selectedTile = _selectedTile;
             }
 
+            // load in a copy of your minepercentage
             float MineTimeValue;
             lock (_mineTimeLock)
             {
-                MineTimeValue = _mineTime.GetTimeMilliseconds();
+                MineTimeValue = 1.001f - _minePercentage;
             }
 
             Parallel.For(0, resolution.X, x =>
             //for (int x = 0; x < resolution.X; y++)
             {
-
                 //Parallel.For(0, resolution.Y, x =>
                 for (int y = 0; y < resolution.Y; y++)
                 {
-                    for (int l = 0; l < renderDistance.X; l++)
+                    int index = y * resolution.X + x;
+                    fixed (DDA_ray* ray = &tempRays[index])
                     {
-                        IntTriple TileIndex = Tile.GetTileIndex(tempRays[x, y].Update());
-                        if (World.GetTileCopyFromIndex(TileIndex, out Tile tile))
+                        for (int l = 0; l < renderDistance; l++)
                         {
-                            if (tile.Isfull)
+                            IntTriple TileIndex = Tile.GetTileIndex(ray->Update());
+                            if (World.GetTileCopyFromIndex(TileIndex, out Tile tile))
                             {
-                                tempRays[x, y]._color = tile.Color * ((500f - MathF.Pow(tempRays[x, y].LowestDistanceSquared, 0.5f)) / 500f);
-
-                                if (TileIndex == selectedTile)
+                                if (tile.Isfull)
                                 {
-                                    tempRays[x, y]._color *= (tile.GetTileInfo.GetMineTime() / (0.0001f + MineTimeValue));
-                                }
-                                break;
+                                    ray->_color = General.Multiply(tile.Color, (500f - MathF.Sqrt(ray->LowestDistanceSquared)) / 100000f);
 
+                                    if (TileIndex == selectedTile)
+                                    {
+                                        ray->_color *= MineTimeValue;
+                                    }
+                                    break;
+                                }
                             }
-                        }
-                        else
-                        {
-                            break;
+                            else
+                            {
+                                break;
+                            }
                         }
                     }
                 }
@@ -546,20 +637,24 @@ namespace tilemap_system
 
             lock (drawRays)
             {
-                drawRays = tempRays;
+                for (int y = 0; y < resolution.Y; y++)
+                {
+                    for (int x = 0; x < resolution.X; x++)
+                    {
+                        drawRays[x, y] = tempRays[y * resolution.X + x];
+                    }
+                }
             }
             firstRayCast = true;
         }
         static bool firstRayCast = false;
+
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.Black);
 
-            //a relic of old visualization code, not needed anymore
-            //offset = loadDistance.XY - _player.XY - new Vector2(_player.Cube.XSize / 2, _player.Cube.YSize / 2); 
+            _spriteBatch.Begin(SpriteSortMode.FrontToBack);
 
-
-            _spriteBatch.Begin();
             //draws tiles from previous raycasting
             lock (drawRays)
             {
@@ -568,8 +663,7 @@ namespace tilemap_system
                     {
                         for (int y = 0; y < resolution.Y; y++)
                         {
-
-                            _spriteBatch.Draw(Tile._texture,
+                            _spriteBatch.Draw(_square,
                             new Rectangle(
                                 x * pixelWidth,
                                 y * pixelHeight,
@@ -581,8 +675,7 @@ namespace tilemap_system
                             0,
                             new Vector2(),
                             SpriteEffects.None,
-                            0.99f
-
+                            DepthLayers.WorldMin + DepthLayers.WorldMax / drawRays[x, y].LowestDistanceSquared
                             );
                         }
                     }
@@ -591,45 +684,60 @@ namespace tilemap_system
             _spriteBatch.Draw(crosshair, crosshairDrawPos, null, Color.White, 0, new Vector2(), crosshairScale, 0, 1);
 
             //draws debug
-            _spriteBatch.DrawString(_font, ((int)(_player.Position.X / Tile.XSize)).ToString(), new(), Color.White);
-            _spriteBatch.DrawString(_font, ((int)(_player.Position.Y / Tile.YSize)).ToString(), new(0, _font.LineSpacing), Color.White);
-            _spriteBatch.DrawString(_font, ((int)(_player.Position.Z / Tile.ZSize)).ToString(), new(0, _font.LineSpacing * 2), Color.White);
+            _spriteBatch.DrawString(_font, ((int)(_player.Position.X / Tile.Size)).ToString(), new(), Color.White);
+            _spriteBatch.DrawString(_font, ((int)(_player.Position.Y / Tile.Size)).ToString(), new(0, _font.LineSpacing), Color.White);
+            _spriteBatch.DrawString(_font, ((int)(_player.Position.Z / Tile.Size)).ToString(), new(0, _font.LineSpacing * 2), Color.White);
             _spriteBatch.DrawString(_font, _player.Position.X.ToString(), new(0, _font.LineSpacing * 4), Color.White);
             _spriteBatch.DrawString(_font, _player.Position.Y.ToString(), new(0, _font.LineSpacing * 5), Color.White);
             _spriteBatch.DrawString(_font, _player.Position.Z.ToString(), new(0, _font.LineSpacing * 6), Color.White);
-            lock (frameCountLock)
-            {
-                _spriteBatch.DrawString(_font, mouseHeldItem.getItemValue(0).ToString(), new(0, _font.LineSpacing * 7), Color.White);
-                _spriteBatch.DrawString(_font, mouseHeldItem.getStackCount(0).ToString(), new(0, _font.LineSpacing * 8), Color.White);
-                frameCount = 0;
-            }
-            World.DrawDebug(_spriteBatch);
-            //if (World.GetTileFromWorldPos(new(1000 * Tile.XSize, 150 * Tile.YSize, 1000 * Tile.ZSize), ref tile))
+
+            /* writes selected tile to screen for debugging */
             if (World.GetTileCopyFromIndex(_selectedTile, out Tile tile))
             {
                 _spriteBatch.DrawString(_font, (tile.GetType).ToString(), new(0, _font.LineSpacing * 3), Color.White);
             }
 
-            // draw held item
-            _spriteBatch.Draw(hotbar.GetItemTexture(selectedItem), new Rectangle((int)screenSize.X - helditemSize / 2, (int)screenSize.Y - helditemSize / 2, helditemSize, helditemSize), null, Color.White, (float)Math.Tau * .95f, new(helditemSize / 2, helditemSize / 2), SpriteEffects.None, 1);
+            /* draw held item */
+            if (hotbar.GetSlot(selectedItem).ItemType.ItemTexture != null)
+            {
+                _spriteBatch.Draw(hotbar.GetSlot(selectedItem).ItemType.ItemTexture, new Rectangle((int)screenSize.X - helditemSize / 2, (int)screenSize.Y - helditemSize / 2, helditemSize, helditemSize), null, Color.White, (float)Math.Tau * .95f, new(helditemSize / 2, helditemSize / 2), SpriteEffects.None, 1);
+            }
 
+            if (GameState.Inventory == gameState)
+            {
+                mouseHeldItem.DrawSlot(_spriteBatch, _font, new(_mouseState.X - hotbarSize / 2, _mouseState.Y - hotbarSize / 2, hotbarSize, hotbarSize));
+            }
+
+            /* draws all slots active and interactable item slots */
+            Container.DrawAllSlots(
+                _spriteBatch,
+                _square,
+                _font,
+                ref _activeContainers,
+                ref _activeContainerRects
+            );
+
+            /* draws selected hotbar slot to be brighter */
+            _spriteBatch.Draw(_square, _activeContainerRects[0][selectedItem], null, Color.White * 0.5f, 0, new(), SpriteEffects.None, DepthLayers.SelectedItemHighlight);
+
+            /* old code
             //draws hotbar
-            for (int index = 0; index < hotbar.Count; index++)
+            for (int index = 0; index < hotbar.GetSlotCount; index++)
             {
                 Color color = Color.Gray;
                 if (selectedItem == index)
                 {
                     color = Color.White;
                 }
-                if (StorageInfo.getInteractList.Contains(new(hotbar, index)))
+                if (Container.SlotsToProcess.Contains((1, index)))
                 {
                     color = Color.Yellow;
                 }
                 _spriteBatch.Draw(square, hotbarRects[index], null, color, 0, new(), 0, 0.99f);
-                if (hotbar.getItemValue(index) != StorageInfo.ItemValue.Empty)
+                if (hotbar.GetSlot(selectedItem).Amount > 0)
                 {
-                    _spriteBatch.Draw(hotbar.GetItemTexture(index), hotbarRects[index], null, Color.White, 0, new(), 0, 1);
-                    _spriteBatch.DrawString(_font, hotbar.getStackCount(index).ToString(), new(hotbarRects[index].X, hotbarRects[index].Y), Color.White);
+                    _spriteBatch.Draw(hotbar.GetSlot(selectedItem).ItemValue.ItemTexture, hotbarRects[index], null, Color.White, 0, new(), 0, 1);
+                    _spriteBatch.DrawString(_font, hotbar.GetSlot(selectedItem).Amount.ToString(), new(hotbarRects[index].X, hotbarRects[index].Y), Color.White);
                 }
 
             }
@@ -641,12 +749,12 @@ namespace tilemap_system
 
                 for (int y = 0; y < rowCount; y++)
                 {
-                    for (int x = 0; x < hotbar.Count; x++)
+                    for (int x = 0; x < hotbar.GetSlotCount; x++)
                     {
-                        if (index < inventory.Count)
+                        if (index < inventory.GetSlotCount)
                         {
                             Color color = Color.Gray;
-                            if (StorageInfo.getInteractList.Contains(new(inventory, index)))
+                            if (Container.SlotsToProcess.Contains((0, index)))
                             {
                                 color = Color.Yellow;
                             }
@@ -671,14 +779,25 @@ namespace tilemap_system
                 }
 
             }
+            */
 
             //draws pause menu
             if (GameState.Paused == gameState)
             {
-                _spriteBatch.Draw(square, new Rectangle(0, 0, (int)screenSize.X, (int)screenSize.Y), null, new Color(128, 128, 128, 128), 0, new(), 0, 1);
-                menuSliders[0].SliderDraw(_spriteBatch, FOV.X);
+                _spriteBatch.Draw(_square, new Rectangle(0, 0, screenSize.X, screenSize.Y), null, new Color(64, 64, 64, 64), 0, new(), 0, DepthLayers.PauseScreenFilter);
+                _menuSliders[0].SliderDraw(_spriteBatch, FOV.X);
+                _menuSliders[1].SliderDraw(_spriteBatch, sensitivity);
             }
-
+            lock (_droppedItems)
+            {
+                for (int i = 0; i < _droppedItems.Count; i++)
+                {
+                    if (DDA_ray.CheckLineOfSight(_droppedItems[i].Position, _player.Position))
+                    {
+                        _droppedItems[i].Draw(_spriteBatch);
+                    }
+                }
+            }
             _spriteBatch.End();
 
             base.Draw(gameTime);

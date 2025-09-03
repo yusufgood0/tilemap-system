@@ -8,7 +8,7 @@ namespace tilemap_system
     internal class Chunk
     {
         public static readonly int _chunkSize = 16; // Size of the chunk (in tiles)
-        public static readonly int _trueChunkSize = _chunkSize * Tile.XSize; // Size of the chunk (in units)
+        public static readonly int _trueChunkSize = _chunkSize * Tile.Size; // Size of the chunk (in units)
         public static readonly int _chunkHeight = 256; // Height of the chunk (in tiles)
 
         // for I/O operations
@@ -62,7 +62,7 @@ namespace tilemap_system
                 for (int z = 0; z < _chunkSize; z++)
                     for (int x = 0; x < _chunkSize; x++)
                     {
-                        outputChunk._Tiles[x, y, z] = new Tile((Tile.ID)data[i++]);
+                        outputChunk._Tiles[x, y, z] = new Tile((Tile.TileID)data[i++]);
                     }
             Game1.Log($"Successfully pulled chunk C{chunkIndex.X}_{chunkIndex.Z} from archive.");
             return true; // Chunk successfully pulled from archive
@@ -81,18 +81,18 @@ namespace tilemap_system
                         for (int localZ = 0; localZ < _chunkSize; localZ++)
                         {
                             // Determine tile type based on height
-                            Tile.ID type;
+                            Tile.TileID type;
                             if (localY < 100)
                             {
-                                type = Tile.ID.Empty; // Below height 100, use empty tile
+                                type = Tile.TileID.Empty; // Below height 100, use empty tile
                             }
                             else if (localY < 150)
                             {
-                                type = Tile.ID.Grass; // Between height 100 and 150, use grass tile
+                                type = Tile.TileID.Grass; // Between height 100 and 150, use grass tile
                             }
                             else
                             {
-                                type = Tile.ID.Stone; // Above height 150, use stone tile
+                                type = Tile.TileID.Stone; // Above height 150, use stone tile
                             }
                             // Create tile with proper world coordinates
                             _Tiles[localX, localY, localZ] = new Tile(type);
@@ -104,15 +104,15 @@ namespace tilemap_system
         public ref Tile getTile(Vector3 worldPos)
         {
             // Calculate local tile indices with proper wrapping for negatives
-            int indexX = (int)(worldPos.X / Tile.XSize) % _chunkSize;
-            int indexZ = (int)(worldPos.Z / Tile.ZSize) % _chunkSize;
+            int indexX = (int)(worldPos.X / Tile.Size) % _chunkSize;
+            int indexZ = (int)(worldPos.Z / Tile.Size) % _chunkSize;
 
             // Ensure indices are positive (handles negative modulo results)
             if (indexX < 0) indexX += _chunkSize;
             if (indexZ < 0) indexZ += _chunkSize;
 
             // Clamp Y to valid range
-            int indexY = (int)Math.Clamp(worldPos.Y / Tile.YSize, 0, _chunkHeight - 1);
+            int indexY = (int)Math.Clamp(worldPos.Y / Tile.Size, 0, _chunkHeight - 1);
 
             return ref _Tiles[indexX, indexY, indexZ];
         }

@@ -14,7 +14,7 @@ namespace tilemap_system
     {
         internal class World
         {
-            private static int renderDistance = 8;
+            private static int renderDistance = 16;
 
 
             private static readonly int _loadedChunksSize = renderDistance * 2 + 1;
@@ -48,14 +48,6 @@ namespace tilemap_system
                     }
                 }
                 Game1.Log("Saved all chunks to archive");
-            }
-            public static void DrawDebug(SpriteBatch spriteBatch)
-            {
-                lock (_loadedChunkCenterlock)
-                {
-                    spriteBatch.DrawString(Game1._font, World._loadedChunkCenter.X.ToString(), new(0, Game1._font.LineSpacing * 9), Color.White);
-                    spriteBatch.DrawString(Game1._font, World._loadedChunkCenter.Z.ToString(), new(0, Game1._font.LineSpacing * 10), Color.White);
-                }
             }
             public static void Initilize(Vector3 FocusPosition)
             {

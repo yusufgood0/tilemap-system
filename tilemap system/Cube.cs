@@ -11,11 +11,23 @@ namespace tilemap_system
 {
     internal struct Cube
     {
+        public Cube(int x, int y, int z, int Size)
+        {
+            X = x; XSize = Size;
+            Y = y; YSize = Size;
+            Z = z; ZSize = Size;
+        }
         public Cube(int x, int y, int z, int xSize, int ySize, int zSize)
         {
             X = x; XSize = xSize;
             Y = y; YSize = ySize;
             Z = z; ZSize = zSize;
+        }
+        public Cube(IntTriple triple, int Size)
+        {
+            X = triple.X; XSize = Size;
+            Y = triple.Y; YSize = Size;
+            Z = triple.Z; ZSize = Size;
         }
         public Cube(IntTriple triple, int xSize, int ySize, int zSize)
         {
@@ -42,7 +54,7 @@ namespace tilemap_system
         public int ZSize { get; set; }
 
         public readonly Vector3 Center { get => new(X + XSize / 2, Y + YSize / 2, Z + ZSize / 2); }
-        public readonly Rectangle Rectangle { get => new (X, Y, XSize, YSize); }
+        public readonly Rectangle Rectangle { get => new(X, Y, XSize, YSize); }
         public readonly IntTriple Position { get => new(X, Y, Z); }
     }
 }

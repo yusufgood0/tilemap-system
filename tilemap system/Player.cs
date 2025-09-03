@@ -21,12 +21,8 @@ namespace tilemap_system
         public Vector2 _angle = Vector2.Zero;
         private static readonly string _saveDirectory = Path.Combine(Environment.CurrentDirectory, "HomemadeMinecraft", "PlayerInfo", "PlayerPos.txt");
 
-        public enum GameMode
-        {
-            Survival,
-            Creative
-        }
-        GameMode gameMode = GameMode.Survival;
+        
+        GameMode gameMode = GameMode.Creative;
 
         public Player(Vector3 position)
         {
@@ -130,7 +126,6 @@ namespace tilemap_system
             RIGHT = Keys.D,
             UP = Keys.Space,
             DOWN = Keys.LeftShift
-
         }
         public void MoveKeyPressed(KeyboardState keyboardState)
         {
@@ -202,6 +197,22 @@ namespace tilemap_system
                 Game1.Log("Loaded Player position Successfully");
             }
         }
+        public void SafeControlAngleWithMouse(bool PreviousIsMouseVisible, bool IsMouseVisible, Point screenSize, float sensitivity)
+        {
+            if (!PreviousIsMouseVisible)
+            {
+                UpdateRotation(screenSize, sensitivity);
+            }
+            if (!IsMouseVisible)
+            {
+                Mouse.SetPosition((int)screenSize.X / 2, (int)screenSize.Y / 2);
+            }
+        }
+        public void UpdateRotation(Point screenSize, float sensitivity)
+        {
+            _angle.X += (Mouse.GetState().X - screenSize.X / 2) * sensitivity;
+            _angle.Y += (Mouse.GetState().Y - screenSize.Y / 2) * sensitivity;
+        }
         public bool IsSurvival { get => gameMode == GameMode.Survival; set; }
         public bool IsCreative { get => gameMode == GameMode.Creative; set; }
         public Vector2 XY { get => new(_position.X, _position.Y); set; }
@@ -209,6 +220,7 @@ namespace tilemap_system
         public Vector3 Position { get => _position; set; }
         public Rectangle Rectangle { get => new((int)_position.X, (int)_position.Y, sizeX, sizeY); set; }
         public Cube Cube { get => new(_position, sizeX, sizeY, sizeZ); set; } // working here
+        public Vector3 dirVector { get => General.angleToVector3(_angle); }
 
 
     }
